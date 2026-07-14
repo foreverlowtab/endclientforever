@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "forever-endclient",
+	"version": "${version}",
+	"name": "End Client Forever",
+	"description": "Визуальный клиент для Minecraft Fabric 1.21.4: косметика, эффекты, анимации и HUD.",
+	"authors": [
+		"ForeverLowTab"
+	],
+	"contact": {
+		"homepage": "https://endclient.fun",
+		"sources": "https://github.com/foreverlowtab/endclientforever"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/forever-endclient/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"forever.end.EndClientForever"
+		],
+		"client": [
+			"forever.end.client.EndClientForeverClient"
+		]
+	},
+	"mixins": [
+		"forever-endclient.mixins.json",
+		{
+			"config": "forever-endclient.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.4",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

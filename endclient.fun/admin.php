@@ -1,0 +1,250 @@
+<?php
+require_once __DIR__ . '/includes/functions.php';
+$me = current_user();
+if (!$me) redirect('login.php?next=admin.php');
+$isOwner = is_owner($me);
+
+$msg = null; $err = null;
+
+if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!check_csrf($_POST['csrf'] ?? '')) {
+        $err = 'Сессия истекла. Обновите страницу.';
+    } else {
+        $action = $_POST['action'] ?? '';
+        try {
+            if ($action === 'set_role') {
+                $uid = (int)($_POST['user_id'] ?? 0);
+                $role = $_POST['role'] ?? 'user';
+                if (!in_array($role, ['user', 'tester', 'owner'], true)) $role = 'user';
+                db()->prepare('UPDATE users SET role = ? WHERE id = ?')->execute([$role, $uid]);
+                $msg = 'Роль обновлена.';
+            } elseif ($action === 'grant_sub') {
+                $uid = (int)($_POST['user_id'] ?? 0);
+                $days = (int)($_POST['days'] ?? 0);
+                $expires = $days > 0 ? date('Y-m-d H:i:s', time() + $days * 86400) : null;
+                db()->prepare('INSERT INTO subscriptions (user_id, plan, source, started_at, expires_at) VALUES (?, ?, ?, NOW(), ?)')
+                    ->execute([$uid, SUB_PLAN, 'manual', $expires]);
+                $msg = $days > 0 ? ('Подписка выдана на ' . $days . ' дн.') : 'Подписка выдана навсегда.';
+            } elseif ($action === 'revoke_sub') {
+                $uid = (int)($_POST['user_id'] ?? 0);
+                db()->prepare('DELETE FROM subscriptions WHERE user_id = ?')->execute([$uid]);
+                $msg = 'Подписки пользователя удалены.';
+            } elseif ($action === 'delete_user') {
+                $uid = (int)($_POST['user_id'] ?? 0);
+                if ($uid === (int)$me['id']) {
+                    $err = 'Нельзя удалить самого себя.';
+                } else {
+                    db()->prepare('DELETE FROM users WHERE id = ?')->execute([$uid]);
+                    $msg = 'Пользователь удалён.';
+                }
+            } elseif ($action === 'create_promo') {
+                $code = strtoupper(trim($_POST['code'] ?? ''));
+                $days = (int)($_POST['duration_days'] ?? 0);
+                $max  = (int)($_POST['max_uses'] ?? 0);
+                $note = trim($_POST['note'] ?? '');
+                if (!preg_match('/^[A-Z0-9_-]{3,64}$/', $code)) {
+                    $err = 'Код промокода: 3–64 символа, латиница/цифры/дефис/подчёркивание.';
+                } else {
+                    try {
+                        db()->prepare('INSERT INTO promo_codes (code, plan, duration_days, max_uses, is_active, note) VALUES (?, ?, ?, ?, 1, ?)')
+                            ->execute([$code, SUB_PLAN, $days, $max, $note !== '' ? $note : null]);
+                        $msg = 'Промокод создан: ' . $code;
+                    } catch (PDOException $e) {
+                        $err = $e->getCode() === '23000' ? 'Такой промокод уже существует.' : 'Ошибка создания промокода.';
+                    }
+                }
+            } elseif ($action === 'toggle_promo') {
+                $pid = (int)($_POST['promo_id'] ?? 0);
+                db()->prepare('UPDATE promo_codes SET is_active = 1 - is_active WHERE id = ?')->execute([$pid]);
+                $msg = 'Статус промокода изменён.';
+            } elseif ($action === 'delete_promo') {
+                $pid = (int)($_POST['promo_id'] ?? 0);
+                db()->prepare('DELETE FROM promo_codes WHERE id = ?')->execute([$pid]);
+                $msg = 'Промокод удалён.';
+            }
+        } catch (PDOException $ex) {
+            $err = 'Ошибка операции. Проверьте данные и попробуйте снова.';
+        }
+    }
+}
+
+$page_title = 'Админ-панель — End Client Forever';
+require __DIR__ . '/includes/header.php';
+
+if (!$isOwner):
+?>
+<div class="deny">
+  <h1>Доступ запрещён</h1>
+  <p>Админ-панель доступна только владельцу (owner).</p>
+  <a href="dashboard.php" class="btn btn-primary">В личный кабинет</a>
+</div>
+<?php
+    require __DIR__ . '/includes/footer.php';
+    exit;
+endif;
+
+$totUsers = (int) db()->query('SELECT COUNT(*) AS c FROM users')->fetch()['c'];
+$totDowns = (int) db()->query('SELECT COUNT(*) AS c FROM downloads')->fetch()['c'];
+$totSubs  = (int) db()->query('SELECT COUNT(DISTINCT user_id) AS c FROM subscriptions WHERE expires_at IS NULL OR expires_at > NOW()')->fetch()['c'];
+$totPromo = (int) db()->query('SELECT COUNT(*) AS c FROM promo_codes')->fetch()['c'];
+
+$users = db()->query(
+    'SELECT u.*,
+       (SELECT COUNT(*) FROM subscriptions s WHERE s.user_id = u.id AND (s.expires_at IS NULL OR s.expires_at > NOW())) AS active_subs
+     FROM users u ORDER BY u.created_at DESC LIMIT 200'
+)->fetchAll();
+
+$promos = db()->query('SELECT * FROM promo_codes ORDER BY created_at DESC')->fetchAll();
+
+$recent = db()->query(
+    'SELECT d.*, u.username FROM downloads d LEFT JOIN users u ON u.id = d.user_id
+     ORDER BY d.downloaded_at DESC LIMIT 25'
+)->fetchAll();
+
+$csrf = csrf_token();
+?>
+<div class="admin">
+  <div class="container">
+    <div class="admin-head">
+      <h1>🛡 Админ-панель</h1>
+      <a href="dashboard.php" class="logout">← В кабинет</a>
+    </div>
+    <?php if ($msg): ?><div class="alert alert-ok"><?= e($msg) ?></div><?php endif; ?>
+    <?php if ($err): ?><div class="alert alert-err"><?= e($err) ?></div><?php endif; ?>
+
+    <div class="admin-stats">
+      <div class="stat-card"><div class="n"><?= $totUsers ?></div><div class="l">Пользователей</div></div>
+      <div class="stat-card"><div class="n"><?= $totSubs ?></div><div class="l">Активных подписок</div></div>
+      <div class="stat-card"><div class="n"><?= $totDowns ?></div><div class="l">Скачиваний</div></div>
+      <div class="stat-card"><div class="n"><?= $totPromo ?></div><div class="l">Промокодов</div></div>
+    </div>
+
+    <div class="admin-section">
+      <h2>👥 Пользователи</h2>
+      <div class="table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>ID</th><th>Пользователь</th><th>Email</th><th>Роль</th><th>Подписка</th><th>Действия</th></tr></thead>
+        <tbody>
+        <?php foreach ($users as $usr): ?>
+          <tr>
+            <td><?= (int)$usr['id'] ?></td>
+            <td><a href="profile.php?u=<?= e(urlencode($usr['username'])) ?>" style="color:var(--accent);font-weight:600"><?= e($usr['username']) ?></a></td>
+            <td><?= e($usr['email']) ?></td>
+            <td>
+              <form method="post" class="inline">
+                <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                <input type="hidden" name="action" value="set_role">
+                <input type="hidden" name="user_id" value="<?= (int)$usr['id'] ?>">
+                <select name="role" onchange="this.form.submit()">
+                  <?php foreach (['user', 'tester', 'owner'] as $r): ?>
+                    <option value="<?= $r ?>" <?= $usr['role'] === $r ? 'selected' : '' ?>><?= e(role_label($r)) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </form>
+            </td>
+            <td><?= $usr['active_subs'] > 0 ? '<span class="chip on">Активна</span>' : '<span class="chip off">Нет</span>' ?></td>
+            <td>
+              <div class="inline">
+                <form method="post" class="inline">
+                  <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                  <input type="hidden" name="action" value="grant_sub">
+                  <input type="hidden" name="user_id" value="<?= (int)$usr['id'] ?>">
+                  <input type="number" name="days" value="0" min="0" title="0 = навсегда" style="width:70px">
+                  <button class="btn btn-ghost btn-sm">Выдать</button>
+                </form>
+                <form method="post" class="inline" onsubmit="return confirm('Снять подписки пользователя?')">
+                  <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                  <input type="hidden" name="action" value="revoke_sub">
+                  <input type="hidden" name="user_id" value="<?= (int)$usr['id'] ?>">
+                  <button class="btn btn-ghost btn-sm">Снять</button>
+                </form>
+                <?php if ((int)$usr['id'] !== (int)$me['id']): ?>
+                <form method="post" class="inline" onsubmit="return confirm('Удалить пользователя без возврата?')">
+                  <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                  <input type="hidden" name="action" value="delete_user">
+                  <input type="hidden" name="user_id" value="<?= (int)$usr['id'] ?>">
+                  <button class="btn btn-danger btn-sm">Удалить</button>
+                </form>
+                <?php endif; ?>
+              </div>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+      <div class="admin-section">
+        <h2>🎁 Создать промокод</h2>
+        <form method="post">
+          <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+          <input type="hidden" name="action" value="create_promo">
+          <div class="field"><label>Код</label><input type="text" name="code" placeholder="SUMMER2026" required style="text-transform:uppercase"></div>
+          <div class="field"><label>Дней доступа (0 = навсегда)</label><input type="number" name="duration_days" value="0" min="0"></div>
+          <div class="field"><label>Лимит активаций (0 = без лимита)</label><input type="number" name="max_uses" value="0" min="0"></div>
+          <div class="field"><label>Заметка (необязательно)</label><input type="text" name="note" placeholder="Для чего этот код"></div>
+          <button class="btn btn-primary btn-block">Создать промокод</button>
+        </form>
+      </div>
+
+      <div class="admin-section">
+        <h2>🏷 Промокоды</h2>
+        <div class="table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Код</th><th>Дней</th><th>Исп.</th><th>Статус</th><th></th></tr></thead>
+          <tbody>
+          <?php foreach ($promos as $p): ?>
+            <tr>
+              <td><b><?= e($p['code']) ?></b></td>
+              <td><?= (int)$p['duration_days'] === 0 ? '∞' : (int)$p['duration_days'] ?></td>
+              <td><?= (int)$p['used_count'] ?><?= (int)$p['max_uses'] > 0 ? ('/' . (int)$p['max_uses']) : '' ?></td>
+              <td><?= (int)$p['is_active'] === 1 ? '<span class="chip on">вкл</span>' : '<span class="chip off">выкл</span>' ?></td>
+              <td>
+                <div class="inline">
+                  <form method="post" class="inline">
+                    <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                    <input type="hidden" name="action" value="toggle_promo">
+                    <input type="hidden" name="promo_id" value="<?= (int)$p['id'] ?>">
+                    <button class="btn btn-ghost btn-sm"><?= (int)$p['is_active'] === 1 ? 'Выкл' : 'Вкл' ?></button>
+                  </form>
+                  <form method="post" class="inline" onsubmit="return confirm('Удалить промокод?')">
+                    <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                    <input type="hidden" name="action" value="delete_promo">
+                    <input type="hidden" name="promo_id" value="<?= (int)$p['id'] ?>">
+                    <button class="btn btn-danger btn-sm">✕</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+          <?php if (!$promos): ?><tr><td colspan="5" style="color:var(--muted)">Пока нет промокодов.</td></tr><?php endif; ?>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h2>⬇ Последние скачивания</h2>
+      <div class="table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Пользователь</th><th>Версия</th><th>IP</th><th>Когда</th></tr></thead>
+        <tbody>
+        <?php foreach ($recent as $d): ?>
+          <tr>
+            <td><?= e($d['username'] ?? '—') ?></td>
+            <td><?= e($d['client_version']) ?></td>
+            <td><?= e($d['ip'] ?? '—') ?></td>
+            <td><?= e(human_datetime($d['downloaded_at'])) ?></td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if (!$recent): ?><tr><td colspan="4" style="color:var(--muted)">Пока нет скачиваний.</td></tr><?php endif; ?>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+</div>
+<?php require __DIR__ . '/includes/footer.php'; ?>
