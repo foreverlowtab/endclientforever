@@ -20,7 +20,6 @@ public class AuthScreen extends EcfScreen {
     private String error = "";
     private String info = "";
     private boolean busy = false;
-    private int shake = 0;
 
     // геометрия карточки
     private int cw = 320, ch = 268, cx, cy, pad = 24;
@@ -92,7 +91,6 @@ public class AuthScreen extends EcfScreen {
         String p = passBox.getValue();
         if (u.isEmpty() || p.isEmpty()) {
             error = "Введите имя пользователя и пароль";
-            shake = 12;
             return;
         }
         error = "";
@@ -107,22 +105,14 @@ public class AuthScreen extends EcfScreen {
                 if (this.minecraft != null) this.minecraft.setScreen(new MainMenuScreen());
             } else {
                 error = r.message.isEmpty() ? "Неверный логин или пароль" : r.message;
-                shake = 12;
             }
         });
     }
 
     @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
-        renderPanorama(g);
-        renderTopBar(g);
+    protected void renderBehind(GuiGraphics g, int mx, int my, float pt) {
         Theme t = theme();
-        int dx = 0;
-        if (shake > 0) {
-            dx = (shake % 2 == 0) ? 4 : -4;
-            shake--;
-        }
-        int bx = cx + dx;
+        int bx = cx;
 
         // карточка
         Draw.roundRect(g, bx, cy + 6, cw, ch, 16, 0x33000000);
@@ -149,9 +139,12 @@ public class AuthScreen extends EcfScreen {
         g.drawString(this.font, "Пароль", fx, cy + 180, t.muted, false);
         Draw.roundRectBorder(g, fx, cy + 190, fw, 20, 6, t.panel2,
                 passBox != null && passBox.isFocused() ? t.accent : t.border());
+    }
 
+    @Override
+    public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
-
+        Theme t = theme();
         if (!info.isEmpty()) {
             g.drawCenteredString(this.font, info, cx + cw / 2, cy + 248, t.muted);
         } else if (!error.isEmpty()) {

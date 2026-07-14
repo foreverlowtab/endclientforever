@@ -8,7 +8,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/** Базовый экран: панорама-фон, верхняя панель (бренд + переключатель тем). */
+/** Базовый экран: панорама-фон, верхняя панель (бренд + переключатель тем).
+ * Важно: весь кастомный фон рисуется в renderBackground(), чтобы кнопки-виджеты ложились СВЕРХУ. */
 public abstract class EcfScreen extends Screen {
     private UiButton segRed;
     private UiButton segClaude;
@@ -41,6 +42,22 @@ public abstract class EcfScreen extends Screen {
         ClientState.setTheme(t);
         this.rebuildWidgets();
     }
+
+    /** Фон рисуется здесь — ПОД виджетами (super.render() вызывает этот метод перед отрисовкой кнопок). */
+    @Override
+    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
+        renderScene(g, mx, my, pt);
+    }
+
+    /** Сцена под виджетами. Модальные экраны могут переопределить. */
+    protected void renderScene(GuiGraphics g, int mx, int my, float pt) {
+        renderPanorama(g);
+        renderTopBar(g);
+        renderBehind(g, mx, my, pt);
+    }
+
+    /** Кастомные панели экрана — рисуются под кнопками. */
+    protected void renderBehind(GuiGraphics g, int mx, int my, float pt) {}
 
     /** Панорама-фон (аппроксимация градиентов + сетка + скрим из HTML). */
     protected void renderPanorama(GuiGraphics g) {

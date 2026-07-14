@@ -55,8 +55,14 @@ public class ClickGuiScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
-        g.fill(0, 0, this.width, this.height, 0x8C06070A);
+    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
+        // Затемнённое родительское меню позади.
+        if (parent != null) {
+            parent.render(g, -1, -1, pt);
+            g.fill(0, 0, this.width, this.height, 0xB8060708);
+        } else {
+            g.fill(0, 0, this.width, this.height, 0xE6060708);
+        }
         Theme t = theme();
 
         // верхняя таблетка-бар
@@ -66,15 +72,15 @@ public class ClickGuiScreen extends Screen {
         Draw.roundRectBorder(g, searchX, barY + 6, searchW, barH - 12, (barH - 12) / 2, t.panel2,
                 search != null && search.isFocused() ? t.accent : t.border());
 
-        // доска категорий (masonry)
+        // доска категорий (до 5 колонок, как в макете)
         entries.clear();
-        int x0 = 40, top = barY + barH + 16;
-        int colW = 210, gap = 14;
-        int boardW = this.width - 80;
-        int cols = Math.max(1, (boardW + gap) / (colW + gap));
-        // центрируем сетку
-        int totalW = cols * colW + (cols - 1) * gap;
-        x0 = (this.width - totalW) / 2;
+        int top = barY + barH + 16;
+        int side = 40, gap = 12;
+        int cols = 5;
+        int avail = this.width - side * 2;
+        while (cols > 1 && (avail - gap * (cols - 1)) / cols < 168) cols--;
+        int colW = (avail - gap * (cols - 1)) / cols;
+        int x0 = (this.width - (cols * colW + (cols - 1) * gap)) / 2;
         int[] colY = new int[cols];
         for (int i = 0; i < cols; i++) colY[i] = top;
         int ci = 0;
@@ -136,7 +142,10 @@ public class ClickGuiScreen extends Screen {
             colY[col] = y + cardH + gap;
             ci++;
         }
+    }
 
+    @Override
+    public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
         g.drawCenteredString(this.font, "Нажми R-Shift или Esc, чтобы закрыть", this.width / 2, this.height - 16, 0xFFE0E0E4);
     }

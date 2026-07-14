@@ -67,9 +67,7 @@ public class MainMenuScreen extends EcfScreen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
-        renderPanorama(g);
-        renderTopBar(g);
+    protected void renderBehind(GuiGraphics g, int mx, int my, float pt) {
         Theme t = theme();
         int lx = 40;
 
@@ -107,8 +105,6 @@ public class MainMenuScreen extends EcfScreen {
         int rbW = this.font.width(ClientState.roleLabel) + 12;
         Draw.roundRect(g, tx, chipY + 22, rbW, 12, 6, t.accentSoft());
         g.drawString(this.font, ClientState.roleLabel, tx + 6, chipY + 24, t.accent, false);
-
-        super.render(g, mx, my, pt);
     }
 
     /** Большой заголовок; outline=true рисует контурный текст (как .l2 в HTML). */

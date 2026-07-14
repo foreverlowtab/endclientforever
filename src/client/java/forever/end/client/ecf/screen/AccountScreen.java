@@ -11,12 +11,11 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/** Личный кабинет — модальное окно (дизайн 1:1 с acc-card). */
+/** Личный кабинет — модальное окно поверх главного меню (дизайн 1:1 с acc-card). */
 public class AccountScreen extends EcfScreen {
     private final Screen parent;
     private UiButton downloadBtn;
     private String status = "";
-    private boolean refreshing = false;
 
     private int cw = 380, ch = 300, cx, cy, pad = 24;
 
@@ -36,18 +35,28 @@ public class AccountScreen extends EcfScreen {
         downloadBtn.active = ClientState.canDownload;
         addRenderableWidget(downloadBtn);
 
-        int half = (bw - 8) / 2;
-        addRenderableWidget(new UiButton(bx, cy + 228, half, 22, Component.literal("Профиль на сайте"),
-                UiButton.Style.GHOST, () -> Util.getPlatform().openUri("https://endclient.fun/profile.php?u=" + ClientState.username)));
-        addRenderableWidget(new UiButton(bx + half + 8, cy + 228, half, 22, Component.literal("↻ Обновить"),
-                UiButton.Style.GHOST, this::refresh));
-        addRenderableWidget(new UiButton(bx, cy + 256, bw, 22, Component.literal("Выйти из аккаунта"),
+        addRenderableWidget(new UiButton(bx, cy + 230, bw, 24, Component.literal("Профиль на сайте"),
+                UiButton.Style.GHOST, () -> {
+                    ClientState.event("open_account", "Переход на публичный профиль");
+                    Util.getPlatform().openUri("https://endclient.fun/profile.php?u=" + ClientState.username);
+                }));
+        addRenderableWidget(new UiButton(bx, cy + 258, bw, 24, Component.literal("Выйти из аккаунта"),
                 UiButton.Style.GHOST, () -> {
                     ClientState.logout();
                     this.minecraft.setScreen(new AuthScreen());
                 }));
         addRenderableWidget(new UiButton(cx + cw - 12 - 24, cy + 12, 24, 24, Component.literal("✕"),
                 UiButton.Style.ICON_CIRCLE, this::onClose));
+
+        // Тихое обновление данных при открытии.
+        if (!ClientState.token.isEmpty()) {
+            EndApi.me(ClientState.token, r -> {
+                if (r.ok && r.data != null) {
+                    ClientState.applyLogin(ClientState.token, r.data);
+                    if (downloadBtn != null) downloadBtn.active = ClientState.canDownload;
+                }
+            });
+        }
     }
 
     private void onDownload() {
@@ -60,26 +69,21 @@ public class AccountScreen extends EcfScreen {
         status = "Открыли страницу скачивания в браузере";
     }
 
-    private void refresh() {
-        if (refreshing || ClientState.token.isEmpty()) return;
-        refreshing = true;
-        status = "Обновление…";
-        EndApi.me(ClientState.token, r -> {
-            refreshing = false;
-            if (r.ok && r.data != null) {
-                ClientState.applyLogin(ClientState.token, r.data);
-                if (downloadBtn != null) downloadBtn.active = ClientState.canDownload;
-                status = "Обновлено";
-            } else {
-                status = r.message.isEmpty() ? "Не удалось обновить" : r.message;
-            }
-        });
+    @Override
+    protected void renderScene(GuiGraphics g, int mx, int my, float pt) {
+        // Затемнённое родительское меню позади (как modal-overlay в HTML).
+        if (parent != null) {
+            parent.render(g, -1, -1, pt);
+            g.fill(0, 0, this.width, this.height, 0xB0000000);
+        } else {
+            renderPanorama(g);
+            g.fill(0, 0, this.width, this.height, 0x66000000);
+        }
+        renderBehind(g, mx, my, pt);
     }
 
     @Override
-    public void render(GuiGraphics g, int mx, int my, float pt) {
-        renderPanorama(g);
-        g.fill(0, 0, this.width, this.height, 0x88000000);
+    protected void renderBehind(GuiGraphics g, int mx, int my, float pt) {
         Theme t = theme();
 
         Draw.roundRect(g, cx, cy + 6, cw, ch, 16, 0x40000000);
@@ -121,10 +125,13 @@ public class AccountScreen extends EcfScreen {
         if (!ClientState.canDownload) {
             g.drawString(this.font, "[!] Скачивание доступно по подписке", cx + pad, cy + 184, t.muted, false);
         }
+    }
 
+    @Override
+    public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
         if (!status.isEmpty()) {
-            g.drawCenteredString(this.font, status, cx + cw / 2, cy + ch - 14, t.accent);
+            g.drawCenteredString(this.font, status, cx + cw / 2, cy + ch - 14, theme().accent);
         }
     }
 
