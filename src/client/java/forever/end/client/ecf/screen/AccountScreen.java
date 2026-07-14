@@ -5,18 +5,20 @@ import forever.end.client.ecf.Theme;
 import forever.end.client.ecf.module.Modules;
 import forever.end.client.ecf.net.EndApi;
 import forever.end.client.ecf.ui.Draw;
+import forever.end.client.ecf.ui.UiButton;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/** Личный кабинет (реальные данные с сайта: профиль, подписка, скачивание). */
+/** Личный кабинет — модальное окно (дизайн 1:1 с acc-card). */
 public class AccountScreen extends EcfScreen {
     private final Screen parent;
-    private Button downloadBtn;
+    private UiButton downloadBtn;
     private String status = "";
     private boolean refreshing = false;
+
+    private int cw = 380, ch = 300, cx, cy, pad = 24;
 
     public AccountScreen(Screen parent) {
         super(Component.literal("Личный кабинет"));
@@ -25,27 +27,27 @@ public class AccountScreen extends EcfScreen {
 
     @Override
     protected void init() {
-        int cw = 320, ch = 244, cx = (this.width - cw) / 2, cy = (this.height - ch) / 2;
-        int bx = cx + 20, bw = cw - 40;
-        int half = (bw - 8) / 2;
+        cx = (this.width - cw) / 2;
+        cy = (this.height - ch) / 2;
+        int bx = cx + pad, bw = cw - pad * 2;
 
-        downloadBtn = Button.builder(Component.literal("↓ Скачать клиент"), b -> onDownload())
-                .bounds(bx, cy + 158, bw, 18).build();
+        downloadBtn = new UiButton(bx, cy + 196, bw, 26, Component.literal("↓ Скачать клиент"),
+                UiButton.Style.PRIMARY, this::onDownload);
         downloadBtn.active = ClientState.canDownload;
         addRenderableWidget(downloadBtn);
 
-        addRenderableWidget(Button.builder(Component.literal("Профиль на сайте"),
-                b -> Util.getPlatform().openUri("https://endclient.fun/profile.php?u=" + ClientState.username))
-                .bounds(bx, cy + 180, half, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("↻ Обновить"), b -> refresh())
-                .bounds(bx + half + 8, cy + 180, half, 18).build());
-
-        addRenderableWidget(Button.builder(Component.literal("Выйти из аккаунта"), b -> {
-            ClientState.logout();
-            this.minecraft.setScreen(new AuthScreen());
-        }).bounds(bx, cy + 202, bw, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("✕"), b -> this.onClose())
-                .bounds(cx + cw - 22, cy + 8, 16, 16).build());
+        int half = (bw - 8) / 2;
+        addRenderableWidget(new UiButton(bx, cy + 228, half, 22, Component.literal("Профиль на сайте"),
+                UiButton.Style.GHOST, () -> Util.getPlatform().openUri("https://endclient.fun/profile.php?u=" + ClientState.username)));
+        addRenderableWidget(new UiButton(bx + half + 8, cy + 228, half, 22, Component.literal("↻ Обновить"),
+                UiButton.Style.GHOST, this::refresh));
+        addRenderableWidget(new UiButton(bx, cy + 256, bw, 22, Component.literal("Выйти из аккаунта"),
+                UiButton.Style.GHOST, () -> {
+                    ClientState.logout();
+                    this.minecraft.setScreen(new AuthScreen());
+                }));
+        addRenderableWidget(new UiButton(cx + cw - 12 - 24, cy + 12, 24, 24, Component.literal("✕"),
+                UiButton.Style.ICON_CIRCLE, this::onClose));
     }
 
     private void onDownload() {
@@ -76,56 +78,68 @@ public class AccountScreen extends EcfScreen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        this.renderBackground(g, mx, my, pt);
-        g.fill(0, 0, this.width, this.height, 0x9E000000);
+        renderPanorama(g);
+        g.fill(0, 0, this.width, this.height, 0x88000000);
         Theme t = theme();
-        int cw = 320, ch = 244, cx = (this.width - cw) / 2, cy = (this.height - ch) / 2;
-        Draw.panel(g, cx, cy, cw, ch, t.panel, t.border());
+
+        Draw.roundRect(g, cx, cy + 6, cw, ch, 16, 0x40000000);
+        Draw.roundRectBorder(g, cx, cy, cw, ch, 16, t.panel, t.border());
 
         String name = ClientState.displayName.isEmpty()
                 ? (ClientState.username.isEmpty() ? "Player" : ClientState.username)
                 : ClientState.displayName;
-        Draw.rect(g, cx + 20, cy + 20, 40, 40, parseColor(ClientState.avatarColor));
-        g.drawString(this.font, name.substring(0, 1).toUpperCase(), cx + 36, cy + 36, 0xFFFFFFFF, false);
-        g.drawString(this.font, name + "  [" + ClientState.roleLabel + "]", cx + 70, cy + 24, t.text, false);
-        g.drawString(this.font, "@" + ClientState.username, cx + 70, cy + 38, t.muted, false);
-        g.drawString(this.font, "С нами с " + ClientState.memberSince, cx + 70, cy + 50, t.muted, false);
 
-        // Подписка
-        Draw.panel(g, cx + 20, cy + 70, cw - 40, 22, t.panel2, t.border());
-        int subColor = ClientState.subActive ? t.accent : 0xFFB9BEC7;
-        g.drawString(this.font, (ClientState.subActive ? "* " : "· ") + ClientState.subLabel(), cx + 28, cy + 77, subColor, false);
+        // шапка: аватар + имя + роль
+        int avS = 52, avX = cx + pad, avY = cy + pad;
+        Draw.roundRect(g, avX, avY, avS, avS, 16, t.avatarA);
+        Draw.roundRect(g, avX, avY + avS / 2, avS, avS / 2, 16, t.avatarB);
+        drawBig(g, name.substring(0, 1).toUpperCase(), avX + avS / 2 - 6, avY + 14, 0xFFFFFFFF, 2.2f);
+        int nx = avX + avS + 14;
+        drawBig(g, name, nx, cy + pad + 6, t.text, 1.5f);
+        int rbW = this.font.width(ClientState.roleLabel) + 12;
+        Draw.roundRect(g, nx, cy + pad + 22, rbW, 13, 6, t.accentSoft());
+        g.drawString(this.font, ClientState.roleLabel, nx + 6, cy + pad + 24, t.accent, false);
+        g.drawString(this.font, "@" + ClientState.username, nx, cy + pad + 40, t.muted, false);
 
-        // Статы
-        int sw = (cw - 40 - 20) / 3;
-        drawStat(g, t, cx + 20, cy + 100, sw, "0.6-test", "Версия");
-        drawStat(g, t, cx + 20 + sw + 10, cy + 100, sw, String.valueOf(ClientState.downloads), "Скачиваний");
-        drawStat(g, t, cx + 20 + (sw + 10) * 2, cy + 100, sw, String.valueOf(Modules.enabledCount()), "Модулей вкл.");
+        // подписка
+        int sy = cy + 96, sw = cw - pad * 2;
+        Draw.roundRectBorder(g, cx + pad, sy, sw, 26, 8, t.panel2, t.border());
+        String badge = "◆ " + ClientState.subPlan;
+        int sbW = this.font.width(badge) + 16;
+        Draw.roundRectBorder(g, cx + pad + 8, sy + 6, sbW, 14, 7,
+                ClientState.subActive ? t.accentSoft() : t.panel2, t.border());
+        g.drawString(this.font, badge, cx + pad + 16, sy + 9, ClientState.subActive ? t.accent : t.muted, false);
+        g.drawString(this.font, ClientState.subLabel(), cx + pad + 8 + sbW + 10, sy + 9, t.muted, false);
+
+        // статы (3)
+        int stY = cy + 132, gap = 10;
+        int stW = (sw - gap * 2) / 3;
+        drawStat(g, t, cx + pad, stY, stW, "0.6-test", "Версия");
+        drawStat(g, t, cx + pad + stW + gap, stY, stW, "1.21.4", "Minecraft");
+        drawStat(g, t, cx + pad + (stW + gap) * 2, stY, stW, String.valueOf(Modules.enabledCount()), "Модулей вкл.");
 
         if (!ClientState.canDownload) {
-            g.drawString(this.font, "[!] Скачивание доступно по подписке", cx + 20, cy + 144, t.muted, false);
+            g.drawString(this.font, "[!] Скачивание доступно по подписке", cx + pad, cy + 184, t.muted, false);
         }
 
         super.render(g, mx, my, pt);
         if (!status.isEmpty()) {
-            g.drawCenteredString(this.font, status, this.width / 2, cy + ch - 12, t.accent);
+            g.drawCenteredString(this.font, status, cx + cw / 2, cy + ch - 14, t.accent);
         }
     }
 
     private void drawStat(GuiGraphics g, Theme t, int x, int y, int w, String n, String l) {
-        Draw.panel(g, x, y, w, 36, t.panel2, t.border());
-        g.drawCenteredString(this.font, n, x + w / 2, y + 8, t.text);
-        g.drawCenteredString(this.font, l, x + w / 2, y + 22, t.muted);
+        Draw.roundRectBorder(g, x, y, w, 40, 8, t.panel2, t.border());
+        g.drawCenteredString(this.font, n, x + w / 2, y + 10, t.text);
+        g.drawCenteredString(this.font, l, x + w / 2, y + 24, t.muted);
     }
 
-    private int parseColor(String hex) {
-        try {
-            if (hex != null && hex.startsWith("#") && hex.length() == 7) {
-                return 0xFF000000 | Integer.parseInt(hex.substring(1), 16);
-            }
-        } catch (Exception ignored) {
-        }
-        return 0xFF46A171;
+    private void drawBig(GuiGraphics g, String s, int x, int y, int color, float scale) {
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(scale, scale, 1f);
+        g.drawString(this.font, s, 0, 0, color, false);
+        g.pose().popPose();
     }
 
     @Override

@@ -9,19 +9,21 @@ import forever.end.client.ecf.module.Category;
 import forever.end.client.ecf.module.Module;
 import forever.end.client.ecf.module.Modules;
 import forever.end.client.ecf.ui.Draw;
+import forever.end.client.ecf.ui.UiButton;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
-/** Внутриигровой ClickGUI: категории, модули, переключатели, поиск. */
+/** Внутриигровой ClickGUI (дизайн 1:1: таблетка-бар, карточки категорий, тогглы). */
 public class ClickGuiScreen extends Screen {
     private final Screen parent;
     private EditBox search;
     private String query = "";
     private final List<Entry> entries = new ArrayList<>();
+
+    private int barX, barY, barW, barH, searchX, searchW;
 
     public ClickGuiScreen(Screen parent) {
         super(Component.literal("ClickGUI"));
@@ -34,26 +36,45 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     protected void init() {
-        search = new EditBox(this.font, this.width / 2 - 80, 20, 140, 16, Component.literal("search"));
+        barW = 460;
+        barH = 34;
+        barX = (this.width - barW) / 2;
+        barY = 20;
+        searchW = 190;
+        searchX = barX + barW - 8 - 34 - 8 - searchW;
+
+        search = new EditBox(this.font, searchX + 12, barY + barH / 2 - 6, searchW - 24, 12, Component.literal("search"));
         search.setHint(Component.literal("Поиск модуля…"));
+        search.setBordered(false);
+        search.setTextColor(theme().text);
         search.setResponder(s -> query = s.toLowerCase());
         addRenderableWidget(search);
-        addRenderableWidget(Button.builder(Component.literal("✕"), b -> this.onClose())
-                .bounds(this.width / 2 + 66, 20, 16, 16).build());
+
+        addRenderableWidget(new UiButton(barX + barW - 8 - 26, barY + (barH - 26) / 2, 26, 26,
+                Component.literal("✕"), UiButton.Style.ICON_CIRCLE, this::onClose));
     }
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        this.renderBackground(g, mx, my, pt);
-        g.fill(0, 0, this.width, this.height, 0x9E000000);
+        g.fill(0, 0, this.width, this.height, 0x8C06070A);
         Theme t = theme();
-        g.drawString(this.font, "ClickGUI", 20, 24, 0xFFFFFFFF, true);
-        super.render(g, mx, my, pt);
+
+        // верхняя таблетка-бар
+        Draw.pillBorder(g, barX, barY, barW, barH, t.panel, t.border());
+        Draw.roundRect(g, barX + 16, barY + barH / 2 - 4, 8, 8, 4, t.accent);
+        g.drawString(this.font, "ClickGUI", barX + 30, barY + barH / 2 - 4, t.text, false);
+        Draw.roundRectBorder(g, searchX, barY + 6, searchW, barH - 12, (barH - 12) / 2, t.panel2,
+                search != null && search.isFocused() ? t.accent : t.border());
+
+        // доска категорий (masonry)
         entries.clear();
-        int x0 = 20, top = 50;
-        int colW = 150, gap = 10;
-        int boardW = this.width - 40;
+        int x0 = 40, top = barY + barH + 16;
+        int colW = 210, gap = 14;
+        int boardW = this.width - 80;
         int cols = Math.max(1, (boardW + gap) / (colW + gap));
+        // центрируем сетку
+        int totalW = cols * colW + (cols - 1) * gap;
+        x0 = (this.width - totalW) / 2;
         int[] colY = new int[cols];
         for (int i = 0; i < cols; i++) colY[i] = top;
         int ci = 0;
@@ -66,37 +87,58 @@ public class ClickGuiScreen extends Screen {
             int col = ci % cols;
             int x = x0 + col * (colW + gap);
             int y = colY[col];
-            int headerH = 16;
-            int rowH = 14;
-            int blockH = headerH + mods.size() * rowH + 6;
-            Draw.panel(g, x, y, colW, blockH, t.panel, t.border());
-            Draw.rect(g, x + 6, y + 4, 12, 12, t.accent);
-            g.drawString(this.font, cat.icon, x + 9, y + 6, 0xFFFFFFFF, false);
-            g.drawString(this.font, cat.name, x + 22, y + 5, t.text, false);
+            int headH = 30;
+            int rowH = 22;
+            int cardH = headH + mods.size() * rowH + 8;
+
+            Draw.roundRect(g, x, y + 3, colW, cardH, 12, 0x33000000);
+            Draw.roundRectBorder(g, x, y, colW, cardH, 12, t.panel, t.border());
+
+            // шапка категории
+            Draw.roundRect(g, x + 12, y + 6, 18, 18, 5, t.accentSoft());
+            g.drawString(this.font, cat.icon, x + 12 + (18 - this.font.width(cat.icon)) / 2, y + 6 + 5, t.accent, false);
+            g.drawString(this.font, cat.name, x + 36, y + 11, t.text, false);
             int on = 0;
             for (Module m : cat.modules) if (m.enabled) on++;
             String cnt = on + "/" + cat.modules.size();
-            g.drawString(this.font, cnt, x + colW - 6 - this.font.width(cnt), y + 5, t.muted, false);
-            int ry = y + headerH;
+            int cntW = this.font.width(cnt) + 12;
+            Draw.roundRect(g, x + colW - 12 - cntW, y + 8, cntW, 14, 7, t.panel2);
+            g.drawString(this.font, cnt, x + colW - 12 - cntW + 6, y + 11, t.muted, false);
+            g.fill(x + 10, y + headH - 1, x + colW - 10, y + headH, t.border());
+
+            int ry = y + headH + 4;
             for (Module m : mods) {
-                if (m.enabled) Draw.rect(g, x + 4, ry, colW - 8, rowH - 1, t.accentSoft());
-                g.drawString(this.font, m.name, x + 8, ry + 3, m.enabled ? t.accent : t.text, false);
-                int swW = 18, swH = 9, swX = x + colW - 8 - swW, swY = ry + 2;
-                Draw.rect(g, swX, swY, swW, swH, m.enabled ? t.accent : 0xFFB9BEC7);
-                int knob = m.enabled ? swX + swW - 8 : swX + 1;
-                Draw.rect(g, knob, swY + 1, 7, swH - 2, 0xFFFFFFFF);
-                if (!m.key.isEmpty()) {
-                    int kw = this.font.width(m.key) + 6;
-                    int kx = swX - 6 - kw;
-                    g.drawString(this.font, m.key, kx + 3, ry + 3, t.muted, false);
+                int rx = x + 8, rw = colW - 16;
+                boolean rowHover = mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rowH - 3;
+                if (m.enabled) {
+                    Draw.roundRectBorder(g, rx, ry, rw, rowH - 3, 6, t.accentSoft(), Draw.alpha(t.accent, 0x66));
+                } else if (rowHover) {
+                    Draw.roundRect(g, rx, ry, rw, rowH - 3, 6, t.panel2);
                 }
-                entries.add(new Entry(m, x + 4, ry, colW - 8, rowH));
+                g.drawString(this.font, m.name, rx + 8, ry + (rowH - 3) / 2 - 4, m.enabled ? t.accent : t.text, false);
+
+                // тоггл
+                int swW = 26, swH = 14, swX = rx + rw - 8 - swW, swY = ry + (rowH - 3 - swH) / 2;
+                Draw.roundRect(g, swX, swY, swW, swH, swH / 2, m.enabled ? t.accent : 0xFFC9CCD3);
+                int knob = m.enabled ? swX + swW - swH + 2 : swX + 2;
+                Draw.roundRect(g, knob, swY + 2, swH - 4, swH - 4, (swH - 4) / 2, 0xFFFFFFFF);
+
+                if (!m.key.isEmpty()) {
+                    int kw = this.font.width(m.key) + 8;
+                    int kx = swX - 6 - kw;
+                    Draw.roundRectBorder(g, kx, ry + (rowH - 3) / 2 - 6, kw, 12, 4, t.panel2,
+                            m.enabled ? Draw.alpha(t.accent, 0x66) : t.border());
+                    g.drawString(this.font, m.key, kx + 4, ry + (rowH - 3) / 2 - 4, m.enabled ? t.accent : t.muted, false);
+                }
+                entries.add(new Entry(m, rx, ry, rw, rowH - 3));
                 ry += rowH;
             }
-            colY[col] = y + blockH + gap;
+            colY[col] = y + cardH + gap;
             ci++;
         }
-        g.drawCenteredString(this.font, "Нажми R-Shift или Esc, чтобы закрыть", this.width / 2, this.height - 14, 0xFFCCCCCC);
+
+        super.render(g, mx, my, pt);
+        g.drawCenteredString(this.font, "Нажми R-Shift или Esc, чтобы закрыть", this.width / 2, this.height - 16, 0xFFE0E0E4);
     }
 
     @Override
