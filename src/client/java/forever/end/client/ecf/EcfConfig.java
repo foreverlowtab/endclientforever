@@ -8,7 +8,7 @@ import java.util.Properties;
 
 import net.fabricmc.loader.api.FabricLoader;
 
-/** Сохранение/загрузка настроек клиента (пока только тема). */
+/** Сохранение/загрузка настроек клиента (тема + токен сессии). */
 public final class EcfConfig {
     private EcfConfig() {}
 
@@ -31,6 +31,10 @@ public final class EcfConfig {
                 } catch (IllegalArgumentException ignored) {
                 }
             }
+            String tok = p.getProperty("token");
+            if (tok != null) ClientState.token = tok;
+            String user = p.getProperty("username");
+            if (user != null) ClientState.username = user;
         } catch (Exception ignored) {
         }
     }
@@ -39,6 +43,8 @@ public final class EcfConfig {
         try {
             Properties p = new Properties();
             p.setProperty("theme", ClientState.theme.name());
+            p.setProperty("token", ClientState.token == null ? "" : ClientState.token);
+            p.setProperty("username", ClientState.username == null ? "" : ClientState.username);
             try (OutputStream out = Files.newOutputStream(file())) {
                 p.store(out, "End Client Forever");
             }

@@ -25,12 +25,18 @@ public class MainMenuScreen extends EcfScreen {
         addThemeToggle();
         int bx = 60, bw = 200, bh = 20, gap = 6;
         int by = this.height / 2 - 10;
-        addRenderableWidget(Button.builder(Component.literal("Одиночная игра"),
-                b -> this.minecraft.setScreen(new SelectWorldScreen(this))).bounds(bx, by, bw, bh).build());
-        addRenderableWidget(Button.builder(Component.literal("Сетевая игра"),
-                b -> this.minecraft.setScreen(new JoinMultiplayerScreen(this))).bounds(bx, by + (bh + gap), bw, bh).build());
-        addRenderableWidget(Button.builder(Component.literal("ClickGUI  [R-Shift]"),
-                b -> this.minecraft.setScreen(new ClickGuiScreen(this))).bounds(bx, by + (bh + gap) * 2, bw, bh).build());
+        addRenderableWidget(Button.builder(Component.literal("Одиночная игра"), b -> {
+            ClientState.event("join_world", "Открыт выбор мира");
+            this.minecraft.setScreen(new SelectWorldScreen(this));
+        }).bounds(bx, by, bw, bh).build());
+        addRenderableWidget(Button.builder(Component.literal("Сетевая игра"), b -> {
+            ClientState.event("join_server", "Открыт список серверов");
+            this.minecraft.setScreen(new JoinMultiplayerScreen(this));
+        }).bounds(bx, by + (bh + gap), bw, bh).build());
+        addRenderableWidget(Button.builder(Component.literal("ClickGUI  [R-Shift]"), b -> {
+            ClientState.event("open_clickgui", "Открыт из главного меню");
+            this.minecraft.setScreen(new ClickGuiScreen(this));
+        }).bounds(bx, by + (bh + gap) * 2, bw, bh).build());
         addRenderableWidget(Button.builder(Component.literal("Настройки"),
                 b -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))).bounds(bx, by + (bh + gap) * 3, bw, bh).build());
         addRenderableWidget(Button.builder(Component.literal("Выход"),
@@ -63,13 +69,14 @@ public class MainMenuScreen extends EcfScreen {
         Draw.rect(g, chipX + 6, chipY + 6, 18, 18, 0xFF46A171);
         g.drawString(this.font, name.substring(0, 1).toUpperCase(), chipX + 12, chipY + 11, 0xFFFFFFFF, false);
         g.drawString(this.font, name, chipX + 30, chipY + 7, t.text, false);
-        g.drawString(this.font, ClientState.role, chipX + 30, chipY + 18, t.accent, false);
+        g.drawString(this.font, ClientState.roleLabel, chipX + 30, chipY + 18, t.accent, false);
         super.render(g, mx, my, pt);
     }
 
     @Override
     public boolean mouseClicked(double mx, double my, int btn) {
         if (btn == 0 && mx >= chipX && mx <= chipX + chipW && my >= chipY && my <= chipY + chipH) {
+            ClientState.event("open_account", "Открыт личный кабинет");
             this.minecraft.setScreen(new AccountScreen(this));
             return true;
         }
@@ -79,6 +86,7 @@ public class MainMenuScreen extends EcfScreen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) {
+            ClientState.event("open_clickgui", "Открыт по R-Shift");
             this.minecraft.setScreen(new ClickGuiScreen(this));
             return true;
         }

@@ -106,6 +106,7 @@ public class ClickGuiScreen extends Screen {
             for (Entry e : entries) {
                 if (mx >= e.x && mx <= e.x + e.w && my >= e.y && my <= e.y + e.h) {
                     e.m.enabled = !e.m.enabled;
+                    ClientState.event("toggle_module", e.m.name + " = " + (e.m.enabled ? "вкл" : "выкл"));
                     return true;
                 }
             }

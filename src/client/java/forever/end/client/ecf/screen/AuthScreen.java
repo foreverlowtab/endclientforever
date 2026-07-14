@@ -1,7 +1,9 @@
 package forever.end.client.ecf.screen;
 
 import forever.end.client.ecf.ClientState;
+import forever.end.client.ecf.EcfConfig;
 import forever.end.client.ecf.Theme;
+import forever.end.client.ecf.net.EndApi;
 import forever.end.client.ecf.ui.Draw;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -10,11 +12,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 
-/** Обязательный экран авторизации — всегда первый, обойти нельзя. */
+/** Обязательный экран авторизации — реальный вход через API сайта. */
 public class AuthScreen extends EcfScreen {
     private EditBox userBox;
     private EditBox passBox;
+    private Button loginBtn;
     private String error = "";
+    private String info = "";
+    private boolean busy = false;
 
     public AuthScreen() {
         super(Component.literal("Авторизация"));
@@ -28,27 +33,69 @@ public class AuthScreen extends EcfScreen {
         userBox = new EditBox(this.font, fx, cy + 116, fw, 20, Component.literal("user"));
         userBox.setHint(Component.literal("ForeverLowTab"));
         userBox.setMaxLength(48);
+        userBox.setValue(ClientState.username);
         addRenderableWidget(userBox);
         passBox = new EditBox(this.font, fx, cy + 152, fw, 20, Component.literal("pass"));
-        passBox.setHint(Component.literal("******"));
+        passBox.setHint(Component.literal("••••••"));
         passBox.setMaxLength(64);
         passBox.setFormatter((s, i) -> FormattedCharSequence.forward("*".repeat(s.length()), Style.EMPTY));
         addRenderableWidget(passBox);
-        addRenderableWidget(Button.builder(Component.literal("Войти и запустить →"), b -> tryLogin())
-                .bounds(fx, cy + 180, fw, 20).build());
+        loginBtn = Button.builder(Component.literal("Войти и запустить →"), b -> tryLogin())
+                .bounds(fx, cy + 180, fw, 20).build();
+        addRenderableWidget(loginBtn);
         this.setInitialFocus(userBox);
+
+        // Тихое восстановление сессии по сохранённому токену.
+        if (!ClientState.authed && ClientState.token != null && !ClientState.token.isEmpty()) {
+            busy = true;
+            info = "Восстановление сессии…";
+            setBusy(true);
+            String tok = ClientState.token;
+            EndApi.me(tok, r -> {
+                busy = false;
+                setBusy(false);
+                info = "";
+                if (r.ok && r.data != null) {
+                    ClientState.applyLogin(tok, r.data);
+                    ClientState.event("launch", "Автовход по сохранённой сессии");
+                    if (this.minecraft != null) this.minecraft.setScreen(new MainMenuScreen());
+                } else {
+                    ClientState.token = "";
+                    EcfConfig.save();
+                }
+            });
+        }
+    }
+
+    private void setBusy(boolean b) {
+        if (loginBtn != null) {
+            loginBtn.active = !b;
+            loginBtn.setMessage(Component.literal(b ? "Проверка…" : "Войти и запустить →"));
+        }
     }
 
     private void tryLogin() {
+        if (busy) return;
         String u = userBox.getValue().trim();
-        String p = passBox.getValue().trim();
+        String p = passBox.getValue();
         if (u.isEmpty() || p.isEmpty()) {
             error = "Введите имя пользователя и пароль";
             return;
         }
-        // Заглушка: реальная проверка через API сайта будет позже.
-        ClientState.login(u.contains("@") ? u.substring(0, u.indexOf('@')) : u);
-        this.minecraft.setScreen(new MainMenuScreen());
+        error = "";
+        busy = true;
+        setBusy(true);
+        EndApi.login(u, p, r -> {
+            busy = false;
+            setBusy(false);
+            if (r.ok && r.data != null && r.data.has("token")) {
+                ClientState.applyLogin(r.data.get("token").getAsString(), r.data);
+                ClientState.event("launch", "Главное меню открыто");
+                if (this.minecraft != null) this.minecraft.setScreen(new MainMenuScreen());
+            } else {
+                error = r.message.isEmpty() ? "Неверный логин или пароль" : r.message;
+            }
+        });
     }
 
     @Override
@@ -61,13 +108,15 @@ public class AuthScreen extends EcfScreen {
         Draw.rect(g, cx + 24, cy + 18, 34, 34, t.accent);
         g.drawString(this.font, "E", cx + 38, cy + 31, 0xFFFFFFFF, false);
         g.drawString(this.font, "Авторизация", cx + 24, cy + 60, t.text, false);
-        g.drawString(this.font, "Войдите, чтобы запустить End Client Forever", cx + 24, cy + 74, t.muted, false);
+        g.drawString(this.font, "Войдите через аккаунт endclient.fun", cx + 24, cy + 74, t.muted, false);
         Draw.rect(g, cx + 24, cy + 88, cw - 48, 14, t.accentSoft());
         g.drawString(this.font, "[!] Вход обязателен — клиент не запустится без входа", cx + 30, cy + 91, t.accent, false);
         g.drawString(this.font, "Имя пользователя или e-mail", cx + 24, cy + 106, t.muted, false);
         g.drawString(this.font, "Пароль", cx + 24, cy + 142, t.muted, false);
         super.render(g, mx, my, pt);
-        if (!error.isEmpty()) {
+        if (!info.isEmpty()) {
+            g.drawCenteredString(this.font, info, this.width / 2, cy + 206, t.muted);
+        } else if (!error.isEmpty()) {
             g.drawCenteredString(this.font, error, this.width / 2, cy + 206, t.accent);
         }
         g.drawCenteredString(this.font, "v0.6-test · Minecraft 1.21.4 · Fabric", this.width / 2, cy + ch + 10, 0xFFCCCCCC);

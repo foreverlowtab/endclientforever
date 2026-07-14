@@ -85,6 +85,26 @@ function role_label(string $role): string {
     return $m[$role] ?? $role;
 }
 
+/** Понятное название типа события клиента (для админ-панели) */
+function client_event_label(string $type): string {
+    $m = [
+        'login'         => 'Вход',
+        'logout'        => 'Выход',
+        'login_failed'  => 'Ошибка входа',
+        'launch'        => 'Запуск клиента',
+        'session'       => 'Проверка сессии',
+        'open_clickgui' => 'Открыт ClickGUI',
+        'open_account'  => 'Открыт кабинет',
+        'open_menu'     => 'Главное меню',
+        'toggle_module' => 'Модуль',
+        'theme'         => 'Смена темы',
+        'download'      => 'Скачивание',
+        'join_world'    => 'Одиночная игра',
+        'join_server'   => 'Сетевая игра',
+    ];
+    return $m[$type] ?? $type;
+}
+
 /** Активная подписка пользователя (или null) */
 function active_subscription(int $userId): ?array {
     $st = db()->prepare(

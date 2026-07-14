@@ -87,6 +87,8 @@ $totUsers = (int) db()->query('SELECT COUNT(*) AS c FROM users')->fetch()['c'];
 $totDowns = (int) db()->query('SELECT COUNT(*) AS c FROM downloads')->fetch()['c'];
 $totSubs  = (int) db()->query('SELECT COUNT(DISTINCT user_id) AS c FROM subscriptions WHERE expires_at IS NULL OR expires_at > NOW()')->fetch()['c'];
 $totPromo = (int) db()->query('SELECT COUNT(*) AS c FROM promo_codes')->fetch()['c'];
+$totEvents = (int) db()->query('SELECT COUNT(*) AS c FROM client_events')->fetch()['c'];
+$online = (int) db()->query('SELECT COUNT(*) AS c FROM client_tokens WHERE last_seen > (NOW() - INTERVAL 10 MINUTE)')->fetch()['c'];
 
 $users = db()->query(
     'SELECT u.*,
@@ -99,6 +101,17 @@ $promos = db()->query('SELECT * FROM promo_codes ORDER BY created_at DESC')->fet
 $recent = db()->query(
     'SELECT d.*, u.username FROM downloads d LEFT JOIN users u ON u.id = d.user_id
      ORDER BY d.downloaded_at DESC LIMIT 25'
+)->fetchAll();
+
+$events = db()->query(
+    'SELECT ev.*, u.username FROM client_events ev LEFT JOIN users u ON u.id = ev.user_id
+     ORDER BY ev.created_at DESC LIMIT 60'
+)->fetchAll();
+
+$sessions = db()->query(
+    'SELECT t.*, u.username FROM client_tokens t JOIN users u ON u.id = t.user_id
+     WHERE t.expires_at IS NULL OR t.expires_at > NOW()
+     ORDER BY t.last_seen DESC LIMIT 40'
 )->fetchAll();
 
 $csrf = csrf_token();
@@ -117,6 +130,8 @@ $csrf = csrf_token();
       <div class="stat-card"><div class="n"><?= $totSubs ?></div><div class="l">Активных подписок</div></div>
       <div class="stat-card"><div class="n"><?= $totDowns ?></div><div class="l">Скачиваний</div></div>
       <div class="stat-card"><div class="n"><?= $totPromo ?></div><div class="l">Промокодов</div></div>
+      <div class="stat-card"><div class="n"><?= $online ?></div><div class="l">Онлайн в клиенте</div></div>
+      <div class="stat-card"><div class="n"><?= $totEvents ?></div><div class="l">Действий в клиенте</div></div>
     </div>
 
     <div class="admin-section">
@@ -223,6 +238,50 @@ $csrf = csrf_token();
           </tbody>
         </table>
         </div>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h2>🟢 Активные сессии клиента</h2>
+      <div class="table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Пользователь</th><th>Активность</th><th>IP</th><th>Вход</th></tr></thead>
+        <tbody>
+        <?php foreach ($sessions as $s):
+            $seen = $s['last_seen'] ? strtotime($s['last_seen']) : 0;
+            $isOnline = $seen && $seen > (time() - 600);
+        ?>
+          <tr>
+            <td><a href="profile.php?u=<?= e(urlencode($s['username'])) ?>" style="color:var(--accent);font-weight:600"><?= e($s['username']) ?></a></td>
+            <td><?= $isOnline ? '<span class="chip on">онлайн</span>' : e(human_datetime($s['last_seen'])) ?></td>
+            <td><?= e($s['ip'] ?? '—') ?></td>
+            <td><?= e(human_datetime($s['created_at'])) ?></td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if (!$sessions): ?><tr><td colspan="4" style="color:var(--muted)">Пока никто не входил через клиент.</td></tr><?php endif; ?>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h2>🎮 Действия пользователей в клиенте</h2>
+      <div class="table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Пользователь</th><th>Действие</th><th>Детали</th><th>IP</th><th>Когда</th></tr></thead>
+        <tbody>
+        <?php foreach ($events as $ev): ?>
+          <tr>
+            <td><?= e($ev['username'] ?? '—') ?></td>
+            <td><span class="chip on"><?= e(client_event_label($ev['event_type'])) ?></span></td>
+            <td style="color:var(--muted)"><?= e($ev['detail'] ?? '—') ?></td>
+            <td><?= e($ev['ip'] ?? '—') ?></td>
+            <td><?= e(human_datetime($ev['created_at'])) ?></td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if (!$events): ?><tr><td colspan="5" style="color:var(--muted)">Пока нет действий из клиента.</td></tr><?php endif; ?>
+        </tbody>
+      </table>
       </div>
     </div>
 
