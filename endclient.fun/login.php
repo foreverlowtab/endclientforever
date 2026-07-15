@@ -21,8 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Заполните все поля.';
     }
     if (!$errors) {
-        $st = db()->prepare('SELECT * FROM users WHERE username = :l OR email = :l LIMIT 1');
-        $st->execute([':l' => $login]);
+        $st = db()->prepare('SELECT * FROM users WHERE username = :l1 OR email = :l2 LIMIT 1');
+        $st->execute([':l1' => $login, ':l2' => $login]);
         $user = $st->fetch();
         if ($user && password_verify($pass, $user['password_hash'])) {
             session_regenerate_id(true);
