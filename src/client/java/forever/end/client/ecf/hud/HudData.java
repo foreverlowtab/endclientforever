@@ -7,8 +7,8 @@ import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Живые данные для HUD: счётчики кликов (CPS) и история FPS.
- * Обновляется раз в кадр из игрового HUD-колбэка (в меню не тикает).
+ * Живые данные для HUD: счётчики кликов (CPS), история FPS и состояние клавиш (WASD + пробел).
+ * Обновляется раз в кадр из игрового HUD-колбека (в меню не тикает).
  */
 public final class HudData {
     private HudData() {}
@@ -21,6 +21,11 @@ public final class HudData {
     private static final int[] FPS = new int[LEN];
     private static int idx = 0;
     private static long lastSample = 0L;
+
+    // Состояние клавиш движения + счётчики нажатий.
+    public static boolean kW, kA, kS, kD, kSpace;
+    public static int cW, cA, cS, cD;
+    private static boolean pW, pA, pS, pD;
 
     public static void update(Minecraft mc) {
         long win = mc.getWindow().getWindow();
@@ -38,6 +43,21 @@ public final class HudData {
             FPS[idx] = mc.getFps();
             idx = (idx + 1) % LEN;
         }
+
+        // Клавиши (читаем текущие привязки движения).
+        kW = mc.options.keyUp.isDown();
+        kA = mc.options.keyLeft.isDown();
+        kS = mc.options.keyDown.isDown();
+        kD = mc.options.keyRight.isDown();
+        kSpace = mc.options.keyJump.isDown();
+        if (kW && !pW) cW++;
+        if (kA && !pA) cA++;
+        if (kS && !pS) cS++;
+        if (kD && !pD) cD++;
+        pW = kW;
+        pA = kA;
+        pS = kS;
+        pD = kD;
     }
 
     private static void prune(Deque<Long> d, long now) {

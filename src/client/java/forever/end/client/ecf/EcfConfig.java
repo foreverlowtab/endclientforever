@@ -52,11 +52,11 @@ public final class EcfConfig {
                 p.load(in);
             }
             for (HudElement e : els) {
-                String bx = p.getProperty("hud." + e.id + ".x");
-                String by = p.getProperty("hud." + e.id + ".y");
+                String bx = p.getProperty("hud." + e.id + ".offX");
+                String by = p.getProperty("hud." + e.id + ".offY");
                 String bs = p.getProperty("hud." + e.id + ".scale");
-                if (bx != null) try { e.fx = Float.parseFloat(bx); } catch (NumberFormatException ignored) {}
-                if (by != null) try { e.fy = Float.parseFloat(by); } catch (NumberFormatException ignored) {}
+                if (bx != null) try { e.offX = Integer.parseInt(bx.trim()); } catch (NumberFormatException ignored) {}
+                if (by != null) try { e.offY = Integer.parseInt(by.trim()); } catch (NumberFormatException ignored) {}
                 if (bs != null) try { e.setScale(Float.parseFloat(bs)); } catch (NumberFormatException ignored) {}
             }
         } catch (Exception ignored) {
@@ -70,8 +70,8 @@ public final class EcfConfig {
             p.setProperty("token", ClientState.token == null ? "" : ClientState.token);
             p.setProperty("username", ClientState.username == null ? "" : ClientState.username);
             for (HudElement e : HudManager.elements()) {
-                p.setProperty("hud." + e.id + ".x", Float.toString(e.fx));
-                p.setProperty("hud." + e.id + ".y", Float.toString(e.fy));
+                p.setProperty("hud." + e.id + ".offX", Integer.toString(e.offX));
+                p.setProperty("hud." + e.id + ".offY", Integer.toString(e.offY));
                 p.setProperty("hud." + e.id + ".scale", Float.toString(e.scale));
             }
             try (OutputStream out = Files.newOutputStream(file())) {

@@ -1,9 +1,10 @@
 package forever.end.client.ecf.hud.elements;
 
+import java.util.Locale;
+
 import forever.end.client.ecf.ClientState;
 import forever.end.client.ecf.hud.HudElement;
 import forever.end.client.ecf.hud.HudManager;
-import forever.end.client.ecf.ui.Colors;
 import forever.end.client.ecf.ui.Draw;
 import forever.end.client.ecf.ui.Fonts;
 import net.minecraft.client.Minecraft;
@@ -11,76 +12,92 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
-/** Водяной знак: бренд + версия + строка профиля (имя / подписка / роль). */
+/** Вотермарк: логотип + версия, профиль с аватаром, подпиской и ролью — порт .hud-wm. Верх слева. */
 public class WatermarkHud extends HudElement {
-    private Component title, ver, name, plan, role;
-    private int titleW, verW, nameW, planW, roleW;
-    private boolean profile, showVer;
+    public WatermarkHud() { super("watermark", "Watermark", "Watermark", Anchor.TL, 6, 6); }
 
-    public WatermarkHud() { super("watermark", "Watermark", "Watermark", 0.008f, 0.012f); }
+    private static String verStr() { return "0.6-test \u00b7 fabric 1.21.4"; }
+
+    private static String name() {
+        String n = ClientState.displayName;
+        if (n == null || n.isBlank()) n = ClientState.username;
+        if (n == null || n.isBlank()) n = "\u0413\u043e\u0441\u0442\u044c";
+        return n;
+    }
+
+    private static String plan() {
+        String p = ClientState.subActive ? ClientState.subPlan : "FREE";
+        return p == null ? "FREE" : p.toUpperCase(Locale.ROOT);
+    }
+
+    private static String role() {
+        String r = ClientState.roleLabel;
+        return (r == null || r.isBlank()) ? "" : r.toUpperCase(Locale.ROOT);
+    }
+
+    private static String initials() {
+        String n = name();
+        String[] parts = n.trim().split("\\s+");
+        String a = parts[0].substring(0, 1);
+        String b = parts.length > 1 ? parts[1].substring(0, 1) : (parts[0].length() > 1 ? parts[0].substring(1, 2) : "");
+        return (a + b).toUpperCase(Locale.ROOT);
+    }
+
+    private float badgeW(Font f, String text) { return HudManager.tw(f, Fonts.body(text), 0.6f) + 8; }
 
     @Override
     protected void layout(Minecraft mc) {
         Font f = mc.font;
-        profile = opt("\u041f\u0440\u043e\u0444\u0438\u043b\u044c", true);
-        showVer = opt("\u0412\u0435\u0440\u0441\u0438\u044f", true);
-        title = Fonts.display("End Client Forever");
-        ver = Fonts.body("0.6-test");
-        String nm = !ClientState.displayName.isEmpty() ? ClientState.displayName
-                : (ClientState.username.isEmpty() ? "Player" : ClientState.username);
-        name = Fonts.display(nm);
-        plan = Fonts.body("\u25c6 " + (ClientState.subActive ? ClientState.subPlan : "Free"));
-        role = Fonts.body(ClientState.roleLabel);
-        titleW = f.width(title);
-        verW = f.width(ver);
-        nameW = f.width(name);
-        planW = f.width(plan);
-        roleW = f.width(role);
-        int row1 = 12 + 5 + titleW + (showVer ? 6 + verW + 8 : 0);
-        int row2 = 12 + 7 + nameW + 6 + (planW + 10) + 4 + (roleW + 8);
-        int content = Math.max(row1, profile ? row2 : 0);
-        w = 9 + content + 8;
-        h = profile ? 6 + 12 + 5 + 12 + 6 : 6 + 12 + 6;
+        boolean ver = opt("\u0412\u0435\u0440\u0441\u0438\u044f", true);
+        boolean prof = opt("\u041f\u0440\u043e\u0444\u0438\u043b\u044c", true);
+        float wmax = 23 + HudManager.tw(f, Fonts.grotesk("End Client Forever"), 1.15f);
+        if (ver) wmax = Math.max(wmax, 23 + HudManager.tw(f, Fonts.body(verStr()), 0.75f));
+        if (prof) {
+            wmax = Math.max(wmax, 25 + HudManager.tw(f, Fonts.grotesk(name()), 0.9f) + 9);
+            wmax = Math.max(wmax, 25 + badgeW(f, plan()) + 4 + badgeW(f, role()));
+        }
+        this.w = Math.round(wmax) + 7;
+        this.h = prof ? 58 : (ver ? 26 : 20);
     }
 
     @Override
     protected void draw(GuiGraphics g, Minecraft mc, float partial, boolean editor) {
         Font f = mc.font;
-        int acc = Colors.themeAccent();
-        HudManager.glassAccent(g, 0, 0, w, h, acc);
-        int lx = 9;
-        int y1 = 6;
-        // бренд-марка
-        Draw.roundRect(g, lx, y1 - 1, 12, 12, 3, acc);
-        Component e = Fonts.display("E");
-        g.drawString(f, e, lx + (12 - f.width(e)) / 2, y1 + 1, 0xFFFFFFFF, false);
-        int tx = lx + 12 + 5;
-        g.drawString(f, title, tx, y1 + 1, 0xFFFFFFFF, true);
-        if (showVer) {
-            int vx = tx + titleW + 6;
-            Draw.roundRect(g, vx, y1, verW + 8, 11, 3, acc);
-            g.drawString(f, ver, vx + 4, y1 + 2, 0xFFFFFFFF, false);
+        boolean ver = opt("\u0412\u0435\u0440\u0441\u0438\u044f", true);
+        boolean prof = opt("\u041f\u0440\u043e\u0444\u0438\u043b\u044c", true);
+        HudManager.card(g, 0, 0, w, h);
+        int acc = HudManager.accent();
+        Draw.roundRect(g, 7, 5, 12, 12, 3, acc);
+        g.drawString(f, Component.literal("\u2726"), 10, 7, 0xFFFFFFFF, false);
+        HudManager.text(g, f, Fonts.grotesk("End Client Forever"), 23, 4, 1.15f, 0xFFFFFFFF);
+        if (ver) HudManager.text(g, f, Fonts.body(verStr()), 23, 15, 0.75f, HudManager.VER);
+        if (prof) {
+            int dy = 26;
+            g.fill(7, dy, w - 7, dy + 1, HudManager.BORDER);
+            int py = 31;
+            Draw.roundRect(g, 7, py, 14, 14, 4, acc);
+            HudManager.textCenter(g, f, Fonts.grotesk(initials()), 7 + 7, py + 4, 0.7f, 0xFFFFFFFF);
+            float nameW = HudManager.tw(f, Fonts.grotesk(name()), 0.9f);
+            HudManager.text(g, f, Fonts.grotesk(name()), 25, py - 1, 0.9f, 0xFFFFFFFF);
+            Draw.roundRect(g, Math.round(25 + nameW + 3), py + 2, 3, 3, 1, HudManager.ONLINE);
+            int by = py + 12;
+            int bx = 25;
+            bx = badge(g, f, bx, by, plan(), true);
+            String r = role();
+            if (!r.isEmpty()) badge(g, f, bx + 4, by, r, false);
         }
-        if (profile) {
-            int y2 = y1 + 12 + 5;
-            Draw.roundRect(g, lx, y2, 12, 12, 6, 0xFF46A171);
-            Draw.roundRect(g, lx, y2 + 6, 12, 6, 6, 0xFF2F7350);
-            String nm = ClientState.displayName.isEmpty()
-                    ? (ClientState.username.isEmpty() ? "P" : ClientState.username.substring(0, 1))
-                    : ClientState.displayName.substring(0, 1);
-            Component ini = Fonts.body(nm.toUpperCase());
-            g.drawString(f, ini, lx + (12 - f.width(ini)) / 2, y2 + 2, 0xFFFFFFFF, false);
-            int nx = lx + 12 + 3;
-            // онлайн-точка
-            Draw.roundRect(g, nx, y2 + 4, 3, 3, 1, 0xFF3FB950);
-            int nameX = nx + 4;
-            g.drawString(f, name, nameX, y2 + 2, 0xFFFFFFFF, false);
-            int bx = nameX + nameW + 6;
-            Draw.roundRect(g, bx, y2, planW + 10, 11, 5, acc);
-            g.drawString(f, plan, bx + 5, y2 + 2, 0xFFFFFFFF, false);
-            int rx = bx + planW + 10 + 4;
-            Draw.roundRect(g, rx, y2, roleW + 8, 11, 5, Colors.withAlpha(acc, 0x33));
-            g.drawString(f, role, rx + 4, y2 + 2, acc, false);
+    }
+
+    private int badge(GuiGraphics g, Font f, int x, int y, String text, boolean planStyle) {
+        int bw = Math.round(HudManager.tw(f, Fonts.body(text), 0.6f)) + 8;
+        int bh = 9;
+        if (planStyle) {
+            Draw.pill(g, x, y, bw, bh, HudManager.accent());
+            HudManager.text(g, f, Fonts.body(text), x + 4, y + 2, 0.6f, 0xFFFFFFFF);
+        } else {
+            Draw.pillBorder(g, x, y, bw, bh, 0x14FFFFFF, HudManager.accent());
+            HudManager.text(g, f, Fonts.body(text), x + 4, y + 2, 0.6f, HudManager.accent());
         }
+        return x + bw;
     }
 }

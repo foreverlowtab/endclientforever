@@ -3,46 +3,31 @@ package forever.end.client.ecf.hud.elements;
 import forever.end.client.ecf.hud.HudData;
 import forever.end.client.ecf.hud.HudElement;
 import forever.end.client.ecf.hud.HudManager;
-import forever.end.client.ecf.ui.Colors;
 import forever.end.client.ecf.ui.Fonts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 
-/** CPS: клики в секунду (ЛКМ, опционально ПКМ). */
+/** CPS: ЛКМ / ПКМ — порт .hud-cps. Под FPS справа. */
 public class CpsHud extends HudElement {
-    private Component label, value, right;
-    private int labelW, valueW, rightW;
-    private boolean both;
-
-    public CpsHud() { super("cps", "CPS", "CPS", 0.008f, 0.19f); }
+    public CpsHud() { super("cps", "CPS", "CPS", Anchor.TR, -6, 58); }
 
     @Override
     protected void layout(Minecraft mc) {
-        Font f = mc.font;
-        both = opt("\u041b\u041a\u041c+\u041f\u041a\u041c", true);
-        label = Fonts.body("CPS");
-        value = Fonts.display(String.valueOf(HudData.leftCps()));
-        right = Fonts.body("R " + HudData.rightCps());
-        labelW = f.width(label);
-        valueW = f.width(value);
-        rightW = f.width(right);
-        int row = labelW + 5 + valueW + (both ? 6 + rightW : 0);
-        w = 8 + row + 8;
-        h = 6 + 10 + 6;
+        this.w = 74;
+        this.h = opt("\u041b\u041a\u041c+\u041f\u041a\u041c", true) ? 30 : 19;
     }
 
     @Override
     protected void draw(GuiGraphics g, Minecraft mc, float partial, boolean editor) {
+        boolean both = opt("\u041b\u041a\u041c+\u041f\u041a\u041c", true);
+        HudManager.card(g, 0, 0, w, h);
         Font f = mc.font;
-        HudManager.glass(g, 0, 0, w, h);
-        int x = 8, y = 6;
-        g.drawString(f, label, x, y + 1, HudManager.MUTED, false);
-        int vx = x + labelW + 5;
-        g.drawString(f, value, vx, y, Colors.themeAccent(), true);
+        HudManager.text(g, f, Fonts.body("\u041b\u041a\u041c"), 8, 6, 0.9f, HudManager.MUTED2);
+        HudManager.textRight(g, f, Fonts.grotesk(Integer.toString(HudData.leftCps())), w - 7, 5, 1.0f, HudManager.TXT);
         if (both) {
-            g.drawString(f, right, vx + valueW + 6, y + 1, HudManager.MUTED, false);
+            HudManager.text(g, f, Fonts.body("\u041f\u041a\u041c"), 8, 18, 0.9f, HudManager.MUTED2);
+            HudManager.textRight(g, f, Fonts.grotesk(Integer.toString(HudData.rightCps())), w - 7, 17, 1.0f, HudManager.TXT);
         }
     }
 }
