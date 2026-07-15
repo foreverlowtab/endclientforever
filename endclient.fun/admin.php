@@ -105,7 +105,7 @@ $recent = db()->query(
 
 $events = db()->query(
     'SELECT ev.*, u.username FROM client_events ev LEFT JOIN users u ON u.id = ev.user_id
-     ORDER BY ev.created_at DESC LIMIT 60'
+     ORDER BY ev.created_at DESC LIMIT 200'
 )->fetchAll();
 
 $sessions = db()->query(
@@ -117,6 +117,16 @@ $sessions = db()->query(
 $csrf = csrf_token();
 ?>
 <div class="admin">
+  <style>
+  .section-head-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .section-head-row h2{margin:0}
+  .section-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tbl-search{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:8px 13px 8px 34px;font:inherit;font-size:14px;color:var(--text);min-width:230px;outline:none;transition:border-color .2s,box-shadow .2s;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="%23888" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="M11 11l4 4"/></svg>');background-repeat:no-repeat;background-position:11px 50%}
+  .tbl-search::placeholder{color:var(--muted)}
+  .tbl-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .tbl-count{font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .tbl-more-wrap{margin-top:12px}
+  </style>
   <div class="container">
     <div class="admin-head">
       <h1>🛡 Админ-панель</h1>
@@ -135,13 +145,19 @@ $csrf = csrf_token();
     </div>
 
     <div class="admin-section">
-      <h2>👥 Пользователи</h2>
+      <div class="section-head-row">
+        <h2>👥 Пользователи</h2>
+        <div class="section-tools">
+          <input type="search" class="tbl-search" id="users-search" placeholder="Поиск: имя или email…">
+          <span class="tbl-count" id="users-count"></span>
+        </div>
+      </div>
       <div class="table-wrap">
-      <table class="admin-table">
+      <table class="admin-table" id="users-table">
         <thead><tr><th>ID</th><th>Пользователь</th><th>Email</th><th>Роль</th><th>Подписка</th><th>Действия</th></tr></thead>
         <tbody>
         <?php foreach ($users as $usr): ?>
-          <tr>
+          <tr class="data-row">
             <td><?= (int)$usr['id'] ?></td>
             <td><a href="profile.php?u=<?= e(urlencode($usr['username'])) ?>" style="color:var(--accent);font-weight:600"><?= e($usr['username']) ?></a></td>
             <td><?= e($usr['email']) ?></td>
@@ -185,9 +201,11 @@ $csrf = csrf_token();
             </td>
           </tr>
         <?php endforeach; ?>
+        <tr class="no-match" style="display:none"><td colspan="6" style="color:var(--muted)">Ничего не найдено.</td></tr>
         </tbody>
       </table>
       </div>
+      <div class="tbl-more-wrap"><button type="button" class="btn btn-ghost btn-block" id="users-toggle" style="display:none"></button></div>
     </div>
 
     <div class="admin-grid">
@@ -265,13 +283,19 @@ $csrf = csrf_token();
     </div>
 
     <div class="admin-section">
-      <h2>🎮 Действия пользователей в клиенте</h2>
+      <div class="section-head-row">
+        <h2>🎮 Действия пользователей в клиенте</h2>
+        <div class="section-tools">
+          <input type="search" class="tbl-search" id="events-search" placeholder="Поиск: пользователь, действие, IP…">
+          <span class="tbl-count" id="events-count"></span>
+        </div>
+      </div>
       <div class="table-wrap">
-      <table class="admin-table">
+      <table class="admin-table" id="events-table">
         <thead><tr><th>Пользователь</th><th>Действие</th><th>Детали</th><th>IP</th><th>Когда</th></tr></thead>
         <tbody>
         <?php foreach ($events as $ev): ?>
-          <tr>
+          <tr class="data-row">
             <td><?= e($ev['username'] ?? '—') ?></td>
             <td><span class="chip on"><?= e(client_event_label($ev['event_type'])) ?></span></td>
             <td style="color:var(--muted)"><?= e($ev['detail'] ?? '—') ?></td>
@@ -280,9 +304,11 @@ $csrf = csrf_token();
           </tr>
         <?php endforeach; ?>
         <?php if (!$events): ?><tr><td colspan="5" style="color:var(--muted)">Пока нет действий из клиента.</td></tr><?php endif; ?>
+        <tr class="no-match" style="display:none"><td colspan="5" style="color:var(--muted)">Ничего не найдено.</td></tr>
         </tbody>
       </table>
       </div>
+      <div class="tbl-more-wrap"><button type="button" class="btn btn-ghost btn-block" id="events-toggle" style="display:none"></button></div>
     </div>
 
     <div class="admin-section">
@@ -306,4 +332,37 @@ $csrf = csrf_token();
     </div>
   </div>
 </div>
+<script>
+(function(){
+  function initTable(o){
+    var table=document.getElementById(o.table);
+    if(!table)return;
+    var search=document.getElementById(o.search),toggle=document.getElementById(o.toggle),count=document.getElementById(o.count);
+    var rows=Array.prototype.slice.call(table.querySelectorAll('tbody tr.data-row'));
+    var noMatch=table.querySelector('tbody tr.no-match');
+    var LIMIT=o.limit||8,expanded=false;
+    function render(){
+      var q=((search&&search.value)||'').trim().toLowerCase();
+      var shown=0,matched=0;
+      rows.forEach(function(tr){
+        var hit=q===''||tr.textContent.toLowerCase().indexOf(q)>-1;
+        if(!hit){tr.style.display='none';return;}
+        matched++;
+        if(q!==''||expanded||shown<LIMIT){tr.style.display='';shown++;}else{tr.style.display='none';}
+      });
+      if(noMatch)noMatch.style.display=(matched===0&&rows.length>0)?'':'none';
+      if(count)count.textContent=q!==''?(matched+' / '+rows.length):(''+rows.length);
+      if(toggle){
+        if(q!==''||rows.length<=LIMIT){toggle.style.display='none';}
+        else{toggle.style.display='';toggle.textContent=expanded?'Свернуть ▴':('Показать все ('+rows.length+') ▾');}
+      }
+    }
+    if(search)search.addEventListener('input',render);
+    if(toggle)toggle.addEventListener('click',function(){expanded=!expanded;render();});
+    render();
+  }
+  initTable({table:'events-table',search:'events-search',toggle:'events-toggle',count:'events-count',limit:8});
+  initTable({table:'users-table',search:'users-search',toggle:'users-toggle',count:'users-count',limit:12});
+})();
+</script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
