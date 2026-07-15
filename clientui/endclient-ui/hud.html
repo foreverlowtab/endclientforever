@@ -91,11 +91,22 @@ a{color:inherit;text-decoration:none}
 .tsh{text-shadow:0 2px 6px rgba(0,0,0,.65)}
 
 /* Watermark */
-.hud-wm{top:16px;left:18px;display:flex;align-items:center;gap:10px;padding:9px 15px}
-.hud-wm .mk{width:22px;height:22px}
+.hud-wm{top:16px;left:18px;flex-direction:column;align-items:stretch;gap:0;padding:0;min-width:216px;overflow:hidden}
+.hud-wm .wm-top{display:flex;align-items:center;gap:10px;padding:11px 15px 10px}
+.hud-wm .mk{width:24px;height:24px;flex:none;filter:drop-shadow(0 2px 6px var(--accent-glow))}
+.hud-wm .wm-brand{line-height:1.18}
 .hud-wm .txt{font-family:var(--font-display);font-weight:700;font-size:17px;letter-spacing:.2px;background:linear-gradient(90deg,var(--accent),#fff,var(--accent-2),var(--accent));background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:sweep 4.5s linear infinite}
 @keyframes sweep{0%{background-position:0% 0}100%{background-position:300% 0}}
 .hud-wm .ver{font-size:10px;color:#cdd2e0;letter-spacing:.5px;opacity:.8}
+.hud-wm .wm-user{display:flex;align-items:center;gap:8px;padding:9px 14px 11px;background:linear-gradient(90deg,var(--accent-glow),transparent);border-top:1px solid rgba(255,255,255,.13)}
+.hud-wm .wm-ava{width:26px;height:26px;border-radius:8px;flex:none;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:11px;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 0 0 1px rgba(255,255,255,.18),0 3px 10px var(--accent-glow)}
+.hud-wm .wm-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.hud-wm .wm-name{font-family:var(--font-display);font-weight:700;font-size:13px;color:#fff;letter-spacing:.2px;display:flex;align-items:center;gap:5px}
+.hud-wm .wm-name .on{width:6px;height:6px;border-radius:50%;background:#41d18a;box-shadow:0 0 7px #41d18a;animation:pulse 2s infinite}
+.hud-wm .wm-tags{display:flex;align-items:center;gap:5px}
+.hud-wm .wm-badge{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 7px;border-radius:999px;display:inline-flex;align-items:center;gap:3px;line-height:1;white-space:nowrap}
+.hud-wm .wm-badge.plan{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 2px 8px var(--accent-glow)}
+.hud-wm .wm-badge.role{color:var(--accent);background:rgba(255,255,255,.08);border:1px solid var(--accent)}
 
 /* Clock */
 .hud-clock{top:16px;left:50%;transform:translateX(-50%);padding:8px 16px;text-align:center}
@@ -231,8 +242,17 @@ footer{border-top:1px solid var(--border);padding:40px 0;text-align:center;color
 
       <!-- Watermark -->
       <div class="hud hud-wm glass" data-mod="wm">
-        <svg class="mk" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="currentColor" style="color:var(--accent)"/><path d="M16 6 L25 16 L16 26 L7 16 Z" stroke="#fff" stroke-width="2" fill="none"/><path d="M16 11 L21 16 L16 21 L11 16 Z" fill="#fff"/></svg>
-        <div><div class="txt">End Client Forever</div><div class="ver">v1.0.0 · fabric 1.21.4</div></div>
+        <div class="wm-top">
+          <svg class="mk" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="currentColor" style="color:var(--accent)"/><path d="M16 6 L25 16 L16 26 L7 16 Z" stroke="#fff" stroke-width="2" fill="none"/><path d="M16 11 L21 16 L16 21 L11 16 Z" fill="#fff"/></svg>
+          <div class="wm-brand"><div class="txt">End Client Forever</div><div class="ver">v1.0.0 · fabric 1.21.4</div></div>
+        </div>
+        <div class="wm-user">
+          <span class="wm-ava">FL</span>
+          <div class="wm-info">
+            <div class="wm-name"><span class="on"></span>ForeverLowTab</div>
+            <div class="wm-tags"><span class="wm-badge plan">◆ Forever Lite</span><span class="wm-badge role">Владелец</span></div>
+          </div>
+        </div>
       </div>
 
       <!-- Clock -->
@@ -312,7 +332,7 @@ footer{border-top:1px solid var(--border);padding:40px 0;text-align:center;color
 
 // ===== Данные модулей =====
 var MODS=[
-  {id:'wm',icon:'✦',name:'Watermark',desc:'Логотип клиента с переливающейся градиентной надписью и версией.',tags:['градиент','главный']},
+  {id:'wm',icon:'✦',name:'Watermark',desc:'Логотип клиента + имя профиля с сайта, подписка и роль. Переливающийся градиент и индикатор онлайна.',tags:['профиль','подписка','роль']},
   {id:'fps',icon:'◰',name:'FPS',desc:'Счётчик кадров с живым мини-графиком нагрузки.',tags:['график','live']},
   {id:'keys',icon:'⌨',name:'Keystrokes',desc:'Блок клавиш WASD + пробел со свечением при нажатии и счётчиком.',tags:['анимация','ввод']},
   {id:'cps',icon:'◉',name:'CPS',desc:'Количество кликов в секунду — левая и правая кнопки.',tags:['счётчик']},
