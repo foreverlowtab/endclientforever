@@ -23,6 +23,7 @@ public class ClickGuiScreen extends Screen {
     private EditBox search;
     private String query = "";
     private final List<Entry> entries = new ArrayList<>();
+    private SettingsPanel panel;
 
     private int barX, barY, barW, barH, searchX, searchW;
 
@@ -37,6 +38,7 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     protected void init() {
+        if (panel == null) panel = new SettingsPanel(this.font);
         barW = 460;
         barH = 34;
         barX = (this.width - barW) / 2;
@@ -144,16 +146,23 @@ public class ClickGuiScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
-        g.drawCenteredString(this.font, Fonts.body("Нажми R-Shift или Esc, чтобы закрыть"), this.width / 2, this.height - 16, 0xFFE0E0E4);
+        if (panel != null) panel.render(g, mx, my);
+        g.drawCenteredString(this.font, Fonts.body("ЛКМ — вкл/выкл · ПКМ — настройки · R-Shift/Esc — закрыть"), this.width / 2, this.height - 16, 0xFFE0E0E4);
     }
 
     @Override
     public boolean mouseClicked(double mx, double my, int btn) {
+        if (panel != null && panel.mouseClicked(mx, my, btn)) return true;
         if (super.mouseClicked(mx, my, btn)) return true;
-        if (btn == 0) {
-            for (Entry e : entries) {
-                if (mx >= e.x && mx <= e.x + e.w && my >= e.y && my <= e.y + e.h) {
-                    e.m.enabled = !e.m.enabled;
+        for (Entry e : entries) {
+            if (mx >= e.x && mx <= e.x + e.w && my >= e.y && my <= e.y + e.h) {
+                if (btn == 1) {
+                    if (e.m.hasSettings()) {
+                        panel.open(e.m, mx, my, this.width, this.height);
+                        return true;
+                    }
+                } else if (btn == 0) {
+                    e.m.toggle();
                     ClientState.event("toggle_module", e.m.name + " = " + (e.m.enabled ? "вкл" : "выкл"));
                     return true;
                 }
@@ -163,7 +172,23 @@ public class ClickGuiScreen extends Screen {
     }
 
     @Override
+    public boolean mouseDragged(double mx, double my, int btn, double dx, double dy) {
+        if (panel != null && panel.mouseDragged(mx, my, btn)) return true;
+        return super.mouseDragged(mx, my, btn, dx, dy);
+    }
+
+    @Override
+    public boolean mouseReleased(double mx, double my, int btn) {
+        if (panel != null) panel.mouseReleased(mx, my, btn);
+        return super.mouseReleased(mx, my, btn);
+    }
+
+    @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && panel != null && panel.isOpen()) {
+            panel.close();
+            return true;
+        }
         if (keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) {
             this.onClose();
             return true;

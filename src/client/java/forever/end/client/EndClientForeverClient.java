@@ -3,6 +3,7 @@ package forever.end.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import forever.end.client.ecf.ClientState;
 import forever.end.client.ecf.EcfConfig;
+import forever.end.client.ecf.module.ModuleManager;
 import forever.end.client.ecf.screen.AuthScreen;
 import forever.end.client.ecf.screen.ClickGuiScreen;
 import forever.end.client.ecf.screen.MainMenuScreen;
@@ -20,6 +21,7 @@ public class EndClientForeverClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EcfConfig.load();
+        ModuleManager.init();
 
         clickGuiKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.forever-endclient.clickgui",
