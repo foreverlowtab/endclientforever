@@ -2,6 +2,7 @@ package forever.end.client.ecf.screen;
 
 import forever.end.client.ecf.ClientState;
 import forever.end.client.ecf.Theme;
+import forever.end.client.ecf.fx.InterfaceFx;
 import forever.end.client.ecf.ui.Draw;
 import forever.end.client.ecf.ui.Fonts;
 import forever.end.client.ecf.ui.UiButton;
@@ -148,7 +149,7 @@ public class MainMenuScreen extends EcfScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) {
+        if (keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT && InterfaceFx.clickGuiKeyEnabled()) {
             ClientState.event("open_clickgui", "Открыт по R-Shift");
             this.minecraft.setScreen(new ClickGuiScreen(this));
             return true;

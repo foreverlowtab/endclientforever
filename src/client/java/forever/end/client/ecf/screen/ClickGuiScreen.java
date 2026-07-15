@@ -7,6 +7,7 @@ import forever.end.client.ecf.ClientState;
 import forever.end.client.ecf.Theme;
 import forever.end.client.ecf.module.Category;
 import forever.end.client.ecf.module.Module;
+import forever.end.client.ecf.fx.InterfaceFx;
 import forever.end.client.ecf.module.Modules;
 import forever.end.client.ecf.ui.Draw;
 import forever.end.client.ecf.ui.Fonts;
@@ -64,8 +65,13 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
-        // Полностью непрозрачный тёмный фон — родительское меню НЕ просвечивает.
-        g.fillGradient(0, 0, this.width, this.height, 0xFF0B0C0E, 0xFF060708);
+        // Menu Blur: если включён и мы в игре — фон полупрозрачный (мир просвечивает); иначе непрозрачный.
+        if (InterfaceFx.menuBlurActive() && this.minecraft != null && this.minecraft.level != null) {
+            int a = InterfaceFx.menuBlurAlpha();
+            g.fillGradient(0, 0, this.width, this.height, (a << 24), (Math.min(255, a + 24) << 24));
+        } else {
+            g.fillGradient(0, 0, this.width, this.height, 0xFF0B0C0E, 0xFF060708);
+        }
         Theme t = theme();
 
         // верхняя таблетка-бар

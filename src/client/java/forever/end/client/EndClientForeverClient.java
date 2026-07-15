@@ -3,6 +3,7 @@ package forever.end.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import forever.end.client.ecf.ClientState;
 import forever.end.client.ecf.EcfConfig;
+import forever.end.client.ecf.fx.InterfaceFx;
 import forever.end.client.ecf.module.ModuleManager;
 import forever.end.client.ecf.screen.AuthScreen;
 import forever.end.client.ecf.screen.ClickGuiScreen;
@@ -46,6 +47,7 @@ public class EndClientForeverClient implements ClientModInitializer {
             }
             while (clickGuiKey.consumeClick()) {
                 if (!ClientState.authed) continue;
+                if (!InterfaceFx.clickGuiKeyEnabled()) continue;
                 Screen cur = client.screen;
                 if (cur == null) {
                     client.setScreen(new ClickGuiScreen(null));

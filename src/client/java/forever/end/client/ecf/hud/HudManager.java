@@ -74,7 +74,7 @@ public final class HudManager {
     // ===== Общие цвета темы =====
     public static int accent() { return Colors.themeAccent(); }
 
-    public static int accent2() { return 0xFF000000 | (ClientState.theme.accent2 & 0xFFFFFF); }
+    public static int accent2() { return Colors.themeAccent2(); }
 
     public static int accentSoft(int a) { return (accent() & 0x00FFFFFF) | ((a & 0xFF) << 24); }
 

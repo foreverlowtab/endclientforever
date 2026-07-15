@@ -7,6 +7,7 @@ import forever.end.client.ecf.EcfConfig;
 import forever.end.client.ecf.Theme;
 import forever.end.client.ecf.hud.HudElement;
 import forever.end.client.ecf.hud.HudManager;
+import forever.end.client.ecf.fx.InterfaceFx;
 import forever.end.client.ecf.module.Module;
 import forever.end.client.ecf.ui.Draw;
 import forever.end.client.ecf.ui.Fonts;
@@ -52,7 +53,12 @@ public class HudEditorScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
-        g.fillGradient(0, 0, this.width, this.height, 0xC00A0B0D, 0xD8060708);
+        if (InterfaceFx.menuBlurActive() && this.minecraft != null && this.minecraft.level != null) {
+            int a = Math.min(210, InterfaceFx.menuBlurAlpha() + 30);
+            g.fillGradient(0, 0, this.width, this.height, (a << 24), (Math.min(255, a + 20) << 24));
+        } else {
+            g.fillGradient(0, 0, this.width, this.height, 0xC00A0B0D, 0xD8060708);
+        }
         if (grid) {
             int c = 0x12FFFFFF;
             for (int gx = 0; gx < this.width; gx += 12) g.fill(gx, 0, gx + 1, this.height, c);

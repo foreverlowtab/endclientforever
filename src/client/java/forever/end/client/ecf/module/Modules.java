@@ -4,6 +4,7 @@ import java.util.List;
 
 import forever.end.client.ecf.fx.CosmeticFx;
 import forever.end.client.ecf.fx.EffectFx;
+import forever.end.client.ecf.fx.InterfaceFx;
 import forever.end.client.ecf.module.setting.Setting;
 
 /** Реестр визуальных модулей. Cosmetics и Effects — с реальными функциями, настройками и стилями. */
@@ -145,13 +146,40 @@ public final class Modules {
                 .add(new Setting.Mode("Формат", 0, "24ч", "12ч"))
                 .add(new Setting.Bool("Дата", false)))),
         new Category("Interface", "◈", List.of(
-            new Module("Chroma", "", true),
-            new Module("Custom Crosshair", "", true),
-            new Module("Glint Colorizer", "", false),
-            new Module("Rainbow Armor", "", false),
-            new Module("ClickGUI", "R-Shift", true),
-            new Module("Nametags", "", true),
-            new Module("Menu Blur", "", false)))
+            new Module("Chroma", "", true)
+                .add(new Setting.Num("Скорость", 1.0, 0.2, 3.0, 0.1))
+                .add(new Setting.Num("Насыщенность", 0.85, 0.3, 1.0, 0.05)),
+            new Module("Custom Crosshair", "", true)
+                .add(new Setting.Mode("Стиль", 0, "Крест", "Точка", "Круг", "Т-образный", "Крест+точка"))
+                .add(new Setting.Num("Размер", 5, 1, 12, 1))
+                .add(new Setting.Num("Зазор", 2, 0, 8, 1))
+                .add(new Setting.Num("Толщина", 1, 1, 4, 1))
+                .add(new Setting.Bool("Контур", true))
+                .add(color())
+                .hud(InterfaceFx::crosshairHud),
+            new Module("Glint Colorizer", "", false)
+                .add(new Setting.Mode("Режим", 0, "Радуга", "Акцент", "Свой"))
+                .add(new Setting.Num("Скорость", 1.0, 0.2, 3.0, 0.1))
+                .add(new Setting.Num("Интенсивность", 55, 10, 90, 1))
+                .add(color())
+                .hud(InterfaceFx::glintHud),
+            new Module("Rainbow Armor", "", false)
+                .add(new Setting.Mode("Режим", 0, "Радуга", "Акцент"))
+                .add(new Setting.Num("Скорость", 1.0, 0.2, 3.0, 0.1))
+                .add(new Setting.Num("Прозрачность", 45, 10, 90, 1))
+                .world(InterfaceFx::rainbowArmor),
+            new Module("ClickGUI", "R-Shift", true)
+                .add(new Setting.Bool("R-Shift", true))
+                .add(new Setting.Bool("Из меню", true)),
+            new Module("Nametags", "", true)
+                .add(new Setting.Bool("Здоровье", true))
+                .add(new Setting.Num("Радиус", 48, 8, 128, 1))
+                .add(new Setting.Num("Масштаб", 1.0, 0.5, 2.0, 0.05))
+                .add(new Setting.Bool("Свои", false))
+                .world(InterfaceFx::nametags),
+            new Module("Menu Blur", "", false)
+                .add(new Setting.Num("Интенсивность", 55, 20, 95, 1))
+                .add(new Setting.Bool("В игре", true))))
     );
 
     public static int enabledCount() {
