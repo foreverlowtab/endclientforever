@@ -11,7 +11,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
-/** Рендер косметики на игроках (себя и других). Все цвета — из настроек модуля (тема/радуга). */
+/** Рендер косметики ТОЛЬКО на локальном игроке. Все цвета — из настроек модуля (тема/радуга). */
 public final class CosmeticFx {
     private CosmeticFx() {}
 
@@ -19,27 +19,26 @@ public final class CosmeticFx {
         void draw(PoseStack ps, MultiBufferSource buf, AbstractClientPlayer p, float partial);
     }
 
-    /** Обход всех видимых игроков с локальным базисом (центр = ноги, поворот по корпусу). */
+    /** Отрисовка ТОЛЬКО на локальном игроке (центр = ноги, поворот по корпусу). */
     private static void forEach(WorldRenderContext ctx, Each fn) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         PoseStack ps = ctx.matrixStack();
         MultiBufferSource buf = ctx.consumers();
         if (ps == null || buf == null) return;
+        AbstractClientPlayer p = mc.player;
+        if (p == null || p.isInvisible()) return;
         float partial = ctx.tickCounter().getGameTimeDeltaPartialTick(false);
         Vec3 cam = ctx.camera().getPosition();
-        for (AbstractClientPlayer p : mc.level.players()) {
-            if (p.isInvisible()) continue;
-            double px = Mth.lerp(partial, p.xOld, p.getX());
-            double py = Mth.lerp(partial, p.yOld, p.getY());
-            double pz = Mth.lerp(partial, p.zOld, p.getZ());
-            float bodyYaw = Mth.lerp(partial, p.yBodyRotO, p.yBodyRot);
-            ps.pushPose();
-            ps.translate(px - cam.x, py - cam.y, pz - cam.z);
-            ps.mulPose(Axis.YP.rotationDegrees(-bodyYaw));
-            fn.draw(ps, buf, p, partial);
-            ps.popPose();
-        }
+        double px = Mth.lerp(partial, p.xOld, p.getX());
+        double py = Mth.lerp(partial, p.yOld, p.getY());
+        double pz = Mth.lerp(partial, p.zOld, p.getZ());
+        float bodyYaw = Mth.lerp(partial, p.yBodyRotO, p.yBodyRot);
+        ps.pushPose();
+        ps.translate(px - cam.x, py - cam.y, pz - cam.z);
+        ps.mulPose(Axis.YP.rotationDegrees(-bodyYaw));
+        fn.draw(ps, buf, p, partial);
+        ps.popPose();
     }
 
     private static float head(AbstractClientPlayer p) {
