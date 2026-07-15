@@ -2,9 +2,11 @@ package forever.end.client.ecf.fx;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
 import forever.end.client.ecf.module.Module;
@@ -14,6 +16,7 @@ import forever.end.client.ecf.ui.Draw;
 import forever.end.client.ecf.ui.Render3D;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -30,8 +33,8 @@ import net.minecraft.world.phys.Vec3;
  *  - Chroma           -> глобальная радуга акцентов (см. Colors.chroma / themeAccent)
  *  - Custom Crosshair  -> crosshairHud (HUD)
  *  - Glint Colorizer   -> glintHud     (HUD, подсветка зачарованных предметов в хотбаре)
- *  - Rainbow Armor     -> rainbowArmor (мир, оболочка поверх надетой брони локального игрока)
- *  - Nametags          -> nametags     (мир, полоса здоровья над игроками)
+ *  - Rainbow Armor     -> rainbowArmor (мир, оболочка по форме надетой брони локального игрока)
+ *  - Nametags          -> nametags     (мир, имя + HP + дистанция над игроками)
  *  - ClickGUI          -> clickGuiKeyEnabled (гейт для клавиши R-Shift)
  *  - Menu Blur         -> menuBlurActive / menuBlurAlpha (фон экранов в игре)
  */
@@ -39,6 +42,7 @@ public final class InterfaceFx {
     private InterfaceFx() {}
 
     private static final int OUTLINE = 0xC8000000;
+    private static final int FULL_BRIGHT = 15728880; // 0xF000F0
 
     // ==================== Custom Crosshair ====================
     public static void crosshairHud(GuiGraphics g, float partial, Module m) {
@@ -153,25 +157,64 @@ public final class InterfaceFx {
         float bodyYaw = Mth.lerp(partial, p.yBodyRotO, p.yBodyRot);
         var inv = p.getInventory();
 
+        // Углы качания конечностей — как в HumanoidModel.setupAnim (cos(pos*0.6662)*амплитуда*скорость).
+        float amt = Math.min(1.0f, p.walkAnimation.speed(partial));
+        float c = Mth.cos(p.walkAnimation.position(partial) * 0.6662f);
+        float legR = c * 1.4f * amt;   // правая нога
+        float legL = -c * 1.4f * amt;  // левая нога (в противофазе)
+        float armR = -c * 1.0f * amt;  // правая рука (в фазе с левой ногой)
+        float armL = c * 1.0f * amt;   // левая рука
+
         ps.pushPose();
         ps.translate(px - cam.x, py - cam.y, pz - cam.z);
         ps.mulPose(Axis.YP.rotationDegrees(-bodyYaw));
-        for (int i = 0; i < 4; i++) {
-            if (inv.getArmor(i).isEmpty()) continue; // 0=ботинки 1=штаны 2=нагрудник 3=шлем
-            shell(ps, buf, i, armorColor(m, i));
+        // 0=ботинки 1=поножи 2=нагрудник 3=шлем
+        for (int slot = 0; slot < 4; slot++) {
+            if (inv.getArmor(slot).isEmpty()) continue;
+            armorShape(ps, buf, slot, armorColor(m, slot), legR, legL, armR, armL);
         }
         ps.popPose();
     }
 
-    private static void shell(PoseStack ps, MultiBufferSource buf, int part, int col) {
-        float e = 0.04f;
-        switch (part) {
-            case 0 -> Render3D.box(ps, buf, -0.24f - e, 0.00f - e, -0.16f - e, 0.24f + e, 0.28f + e, 0.16f + e, col);
-            case 1 -> Render3D.box(ps, buf, -0.24f - e, 0.28f - e, -0.16f - e, 0.24f + e, 0.72f + e, 0.16f + e, col);
-            case 2 -> Render3D.box(ps, buf, -0.26f - e, 0.72f - e, -0.18f - e, 0.26f + e, 1.38f + e, 0.18f + e, col);
-            case 3 -> Render3D.box(ps, buf, -0.20f - e, 1.40f - e, -0.20f - e, 0.20f + e, 1.78f + e, 0.20f + e, col);
+    /** Оболочка по форме частей тела с анимацией ходьбы (локальные координаты, футы на y=0). */
+    private static void armorShape(PoseStack ps, MultiBufferSource buf, int slot, int col,
+                                   float legR, float legL, float armR, float armL) {
+        switch (slot) {
+            case 3 -> { // шлем — голова (куб 8×8×8), статичен
+                float e = 0.07f;
+                Render3D.box(ps, buf, -0.25f - e, 1.50f - e, -0.25f - e, 0.25f + e, 2.00f + e, 0.25f + e, col);
+            }
+            case 2 -> { // нагрудник — торс (статичен) + плечи/верх рук (качаются)
+                float e = 0.05f;
+                Render3D.box(ps, buf, -0.25f - e, 0.72f - e, -0.13f - e, 0.25f + e, 1.46f + e, 0.13f + e, col); // торс
+                limbBox(ps, buf, -0.3125f, 1.45f, 0f, armR, -0.50f - e, 1.02f - e, -0.13f - e, -0.23f, 1.46f + e, 0.13f + e, col); // правая рука
+                limbBox(ps, buf, 0.3125f, 1.45f, 0f, armL, 0.23f, 1.02f - e, -0.13f - e, 0.50f + e, 1.46f + e, 0.13f + e, col);   // левая рука
+            }
+            case 1 -> { // поножи — пояс (статичен) + верх обеих ног (качаются)
+                float e = 0.035f;
+                Render3D.box(ps, buf, -0.25f - e, 0.60f - e, -0.13f - e, 0.25f + e, 0.80f + e, 0.13f + e, col); // пояс
+                limbBox(ps, buf, -0.125f, 0.75f, 0f, legR, -0.25f - e, 0.34f - e, -0.13f - e, -0.01f, 0.64f + e, 0.13f + e, col); // правая нога
+                limbBox(ps, buf, 0.125f, 0.75f, 0f, legL, 0.01f, 0.34f - e, -0.13f - e, 0.25f + e, 0.64f + e, 0.13f + e, col);    // левая нога
+            }
+            case 0 -> { // ботинки — низ обеих ног (качаются вместе с ногами вокруг того же пивота бедра)
+                float e = 0.05f;
+                limbBox(ps, buf, -0.125f, 0.75f, 0f, legR, -0.25f - e, 0.00f, -0.14f - e, -0.01f, 0.30f + e, 0.13f + e, col); // правый
+                limbBox(ps, buf, 0.125f, 0.75f, 0f, legL, 0.01f, 0.00f, -0.14f - e, 0.25f + e, 0.30f + e, 0.13f + e, col);    // левый
+            }
             default -> { }
         }
+    }
+
+    /** Бокс, повёрнутый вокруг оси X относительно точки-пивота сустава (для качания конечностей). */
+    private static void limbBox(PoseStack ps, MultiBufferSource buf,
+                                float pvx, float pvy, float pvz, float xRot,
+                                float x0, float y0, float z0, float x1, float y1, float z1, int col) {
+        ps.pushPose();
+        ps.translate(pvx, pvy, pvz);
+        ps.mulPose(Axis.XP.rotation(xRot));
+        ps.translate(-pvx, -pvy, -pvz);
+        Render3D.box(ps, buf, x0, y0, z0, x1, y1, z1, col);
+        ps.popPose();
     }
 
     private static int armorColor(Module m, int part) {
@@ -200,36 +243,52 @@ public final class InterfaceFx {
         double radius = Math.max(4.0, m.num("Радиус"));
         float scale = m.numf("Масштаб");
         if (scale <= 0f) scale = 1f;
+
         float partial = ctx.tickCounter().getGameTimeDeltaPartialTick(false);
         Vec3 cam = ctx.camera().getPosition();
         Quaternionf orient = mc.getEntityRenderDispatcher().cameraOrientation();
+        Font font = mc.font;
         int accent = Colors.themeAccent();
 
         for (AbstractClientPlayer p : mc.level.players()) {
             if (p == mc.player && !self) continue;
             if (p.isInvisible()) continue;
-            if (p.distanceTo(mc.player) > radius) continue;
+            float dist = p.distanceTo(mc.player);
+            if (dist > radius) continue;
 
+            // Та же интерполяция, что и у ванильного рендерера сущностей.
             double x = Mth.lerp(partial, p.xOld, p.getX());
-            double y = Mth.lerp(partial, p.yOld, p.getY()) + p.getBbHeight() + 0.55;
+            double y = Mth.lerp(partial, p.yOld, p.getY()) + p.getBbHeight() + 0.6;
             double z = Mth.lerp(partial, p.zOld, p.getZ());
 
             ps.pushPose();
             ps.translate(x - cam.x, y - cam.y, z - cam.z);
             ps.mulPose(orient);
             float s = 0.025f * scale;
-            ps.scale(-s, -s, s);
+            ps.scale(s, -s, s); // X положительный — текст не зеркалится
+            Matrix4f mtx = ps.last().pose();
 
-            // подложка + верхняя акцентная линия
-            Render3D.quad(ps, buf, -24, -2, 0, 24, -2, 0, 24, 9, 0, -24, 9, 0, 0xC00A0C12);
-            Render3D.quad(ps, buf, -24, -2, 0, 24, -2, 0, 24, -1, 0, -24, -1, 0, accent);
+            String name = p.getName().getString();
+            int hp = (int) Math.ceil(p.getHealth());
+            int maxHp = (int) Math.ceil(p.getMaxHealth());
+            float frac = Math.max(0f, Math.min(1f, p.getHealth() / Math.max(1f, p.getMaxHealth())));
+            int hpCol = frac > 0.5f ? 0xFF5BD16A : (frac > 0.25f ? 0xFFE7B008 : 0xFFE5484D);
+            String info = hp + "/" + maxHp + " HP   " + String.format(Locale.US, "%.1f", dist) + " м";
+
+            int bg = 0x80000000;
+            // Имя (белым) и строка HP+дистанция (цвет по HP). SEE_THROUGH — читается сквозь препятствия.
+            font.drawInBatch(name, -font.width(name) / 2f, -20f, 0xFFFFFFFF, true, mtx, buf, Font.DisplayMode.SEE_THROUGH, bg, FULL_BRIGHT);
+            font.drawInBatch(info, -font.width(info) / 2f, -9f, hpCol, true, mtx, buf, Font.DisplayMode.SEE_THROUGH, bg, FULL_BRIGHT);
+
+            // акцентная подчёркивающая линия под текстом
+            Render3D.quad(ps, buf, -24f, 1f, 0f, 24f, 1f, 0f, 24f, 2f, 0f, -24f, 2f, 0f, accent);
 
             if (showHp) {
-                float frac = Math.max(0f, Math.min(1f, p.getHealth() / Math.max(1f, p.getMaxHealth())));
-                Render3D.quad(ps, buf, -20, 3, 0, 20, 3, 0, 20, 6, 0, -20, 6, 0, 0xFF20242C);
-                int hc = frac > 0.5f ? 0xFF46A171 : (frac > 0.25f ? accent : 0xFFE5484D);
-                float fw = 40f * frac;
-                Render3D.quad(ps, buf, -20, 3, 0, -20 + fw, 3, 0, -20 + fw, 6, 0, -20, 6, 0, hc);
+                float bw = 90f;
+                float bx0 = -bw / 2f, bx1 = bw / 2f;
+                Render3D.quad(ps, buf, bx0, 4f, 0f, bx1, 4f, 0f, bx1, 8f, 0f, bx0, 8f, 0f, 0xC01A1E24); // трек
+                float fx = bx0 + bw * frac;
+                Render3D.quad(ps, buf, bx0, 4f, 0f, fx, 4f, 0f, fx, 8f, 0f, bx0, 8f, 0f, hpCol);        // заполнение
             }
             ps.popPose();
         }
