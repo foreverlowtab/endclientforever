@@ -5,6 +5,7 @@ import forever.end.client.ecf.EcfConfig;
 import forever.end.client.ecf.Theme;
 import forever.end.client.ecf.net.EndApi;
 import forever.end.client.ecf.ui.Draw;
+import forever.end.client.ecf.ui.Fonts;
 import forever.end.client.ecf.ui.UiButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
@@ -52,7 +53,7 @@ public class AuthScreen extends EcfScreen {
         addRenderableWidget(passBox);
 
         loginBtn = new UiButton(fx, cy + 216, fw, 24,
-                Component.literal("Войти и запустить →"), UiButton.Style.PRIMARY, this::tryLogin);
+                Fonts.body("Войти и запустить →"), UiButton.Style.PRIMARY, this::tryLogin);
         addRenderableWidget(loginBtn);
         this.setInitialFocus(userBox);
 
@@ -81,7 +82,7 @@ public class AuthScreen extends EcfScreen {
     private void setBusy(boolean b) {
         if (loginBtn != null) {
             loginBtn.active = !b;
-            loginBtn.setMessage(Component.literal(b ? "Проверка…" : "Войти и запустить →"));
+            loginBtn.setMessage(Fonts.body(b ? "Проверка…" : "Войти и запустить →"));
         }
     }
 
@@ -120,23 +121,23 @@ public class AuthScreen extends EcfScreen {
 
         // логотип
         Draw.roundRect(g, bx + pad, cy + 22, 40, 40, 12, t.accent);
-        drawBig(g, "E", bx + pad + 20, cy + 34, 0xFFFFFFFF, 2.0f);
+        drawBig(g, Fonts.display("E"), bx + pad + 20, cy + 34, 0xFFFFFFFF, 2.0f);
 
-        drawBig(g, "Авторизация", bx + pad, cy + 72, t.text, 1.7f);
-        g.drawString(this.font, "Войдите, чтобы запустить End Client Forever", bx + pad, cy + 92, t.muted, false);
+        drawBig(g, Fonts.display("Авторизация"), bx + pad, cy + 72, t.text, 1.7f);
+        g.drawString(this.font, Fonts.body("Войдите, чтобы запустить End Client Forever"), bx + pad, cy + 92, t.muted, false);
 
         // lock-note
         int lnW = cw - pad * 2;
         Draw.roundRect(g, bx + pad, cy + 108, lnW, 18, 9, t.accentSoft());
         Draw.roundRect(g, bx + pad + 8, cy + 114, 6, 6, 2, t.accent);
-        g.drawString(this.font, "Вход обязателен — клиент не запустится без входа", bx + pad + 20, cy + 114, t.accent, false);
+        g.drawString(this.font, Fonts.body("Вход обязателен — клиент не запустится без входа"), bx + pad + 20, cy + 114, t.accent, false);
 
         // поля
         int fx = bx + pad, fw = cw - pad * 2;
-        g.drawString(this.font, "Имя пользователя или e-mail", fx, cy + 136, t.muted, false);
+        g.drawString(this.font, Fonts.body("Имя пользователя или e-mail"), fx, cy + 136, t.muted, false);
         Draw.roundRectBorder(g, fx, cy + 146, fw, 20, 6, t.panel2,
                 userBox != null && userBox.isFocused() ? t.accent : t.border());
-        g.drawString(this.font, "Пароль", fx, cy + 180, t.muted, false);
+        g.drawString(this.font, Fonts.body("Пароль"), fx, cy + 180, t.muted, false);
         Draw.roundRectBorder(g, fx, cy + 190, fw, 20, 6, t.panel2,
                 passBox != null && passBox.isFocused() ? t.accent : t.border());
     }
@@ -146,18 +147,18 @@ public class AuthScreen extends EcfScreen {
         super.render(g, mx, my, pt);
         Theme t = theme();
         if (!info.isEmpty()) {
-            g.drawCenteredString(this.font, info, cx + cw / 2, cy + 248, t.muted);
+            g.drawCenteredString(this.font, Fonts.body(info), cx + cw / 2, cy + 248, t.muted);
         } else if (!error.isEmpty()) {
-            g.drawCenteredString(this.font, error, cx + cw / 2, cy + 248, t.accent);
+            g.drawCenteredString(this.font, Fonts.body(error), cx + cw / 2, cy + 248, t.accent);
         }
-        g.drawCenteredString(this.font, "v0.6-test · Minecraft 1.21.4 · Fabric", cx + cw / 2, cy + ch - 16, t.muted);
+        g.drawCenteredString(this.font, Fonts.body("v0.6-test · Minecraft 1.21.4 · Fabric"), cx + cw / 2, cy + ch - 16, t.muted);
     }
 
-    private void drawBig(GuiGraphics g, String s, int cxp, int cyp, int color, float scale) {
+    private void drawBig(GuiGraphics g, Component c, int cxp, int cyp, int color, float scale) {
         g.pose().pushPose();
         g.pose().translate(cxp, cyp, 0);
         g.pose().scale(scale, scale, 1f);
-        g.drawString(this.font, s, 0, 0, color, false);
+        g.drawString(this.font, c, 0, 0, color, false);
         g.pose().popPose();
     }
 

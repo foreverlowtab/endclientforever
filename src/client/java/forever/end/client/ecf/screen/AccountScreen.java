@@ -5,6 +5,7 @@ import forever.end.client.ecf.Theme;
 import forever.end.client.ecf.module.Modules;
 import forever.end.client.ecf.net.EndApi;
 import forever.end.client.ecf.ui.Draw;
+import forever.end.client.ecf.ui.Fonts;
 import forever.end.client.ecf.ui.UiButton;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
@@ -30,17 +31,17 @@ public class AccountScreen extends EcfScreen {
         cy = (this.height - ch) / 2;
         int bx = cx + pad, bw = cw - pad * 2;
 
-        downloadBtn = new UiButton(bx, cy + 196, bw, 26, Component.literal("↓ Скачать клиент"),
+        downloadBtn = new UiButton(bx, cy + 196, bw, 26, Fonts.body("↓ Скачать клиент"),
                 UiButton.Style.PRIMARY, this::onDownload);
         downloadBtn.active = ClientState.canDownload;
         addRenderableWidget(downloadBtn);
 
-        addRenderableWidget(new UiButton(bx, cy + 230, bw, 24, Component.literal("Профиль на сайте"),
+        addRenderableWidget(new UiButton(bx, cy + 230, bw, 24, Fonts.body("Профиль на сайте"),
                 UiButton.Style.GHOST, () -> {
                     ClientState.event("open_account", "Переход на публичный профиль");
                     Util.getPlatform().openUri("https://endclient.fun/profile.php?u=" + ClientState.username);
                 }));
-        addRenderableWidget(new UiButton(bx, cy + 258, bw, 24, Component.literal("Выйти из аккаунта"),
+        addRenderableWidget(new UiButton(bx, cy + 258, bw, 24, Fonts.body("Выйти из аккаунта"),
                 UiButton.Style.GHOST, () -> {
                     ClientState.logout();
                     this.minecraft.setScreen(new AuthScreen());
@@ -97,23 +98,24 @@ public class AccountScreen extends EcfScreen {
         int avS = 52, avX = cx + pad, avY = cy + pad;
         Draw.roundRect(g, avX, avY, avS, avS, 16, t.avatarA);
         Draw.roundRect(g, avX, avY + avS / 2, avS, avS / 2, 16, t.avatarB);
-        drawBig(g, name.substring(0, 1).toUpperCase(), avX + avS / 2 - 6, avY + 14, 0xFFFFFFFF, 2.2f);
+        drawBig(g, Fonts.display(name.substring(0, 1).toUpperCase()), avX + avS / 2 - 6, avY + 14, 0xFFFFFFFF, 2.2f);
         int nx = avX + avS + 14;
-        drawBig(g, name, nx, cy + pad + 6, t.text, 1.5f);
-        int rbW = this.font.width(ClientState.roleLabel) + 12;
+        drawBig(g, Fonts.display(name), nx, cy + pad + 6, t.text, 1.5f);
+        Component role = Fonts.body(ClientState.roleLabel);
+        int rbW = this.font.width(role) + 12;
         Draw.roundRect(g, nx, cy + pad + 22, rbW, 13, 6, t.accentSoft());
-        g.drawString(this.font, ClientState.roleLabel, nx + 6, cy + pad + 24, t.accent, false);
-        g.drawString(this.font, "@" + ClientState.username, nx, cy + pad + 40, t.muted, false);
+        g.drawString(this.font, role, nx + 6, cy + pad + 24, t.accent, false);
+        g.drawString(this.font, Fonts.body("@" + ClientState.username), nx, cy + pad + 40, t.muted, false);
 
         // подписка
         int sy = cy + 96, sw = cw - pad * 2;
         Draw.roundRectBorder(g, cx + pad, sy, sw, 26, 8, t.panel2, t.border());
-        String badge = "◆ " + ClientState.subPlan;
+        Component badge = Fonts.body("◆ " + ClientState.subPlan);
         int sbW = this.font.width(badge) + 16;
         Draw.roundRectBorder(g, cx + pad + 8, sy + 6, sbW, 14, 7,
                 ClientState.subActive ? t.accentSoft() : t.panel2, t.border());
         g.drawString(this.font, badge, cx + pad + 16, sy + 9, ClientState.subActive ? t.accent : t.muted, false);
-        g.drawString(this.font, ClientState.subLabel(), cx + pad + 8 + sbW + 10, sy + 9, t.muted, false);
+        g.drawString(this.font, Fonts.body(ClientState.subLabel()), cx + pad + 8 + sbW + 10, sy + 9, t.muted, false);
 
         // статы (3)
         int stY = cy + 132, gap = 10;
@@ -123,7 +125,7 @@ public class AccountScreen extends EcfScreen {
         drawStat(g, t, cx + pad + (stW + gap) * 2, stY, stW, String.valueOf(Modules.enabledCount()), "Модулей вкл.");
 
         if (!ClientState.canDownload) {
-            g.drawString(this.font, "[!] Скачивание доступно по подписке", cx + pad, cy + 184, t.muted, false);
+            g.drawString(this.font, Fonts.body("[!] Скачивание доступно по подписке"), cx + pad, cy + 184, t.muted, false);
         }
     }
 
@@ -131,21 +133,21 @@ public class AccountScreen extends EcfScreen {
     public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
         if (!status.isEmpty()) {
-            g.drawCenteredString(this.font, status, cx + cw / 2, cy + ch - 14, theme().accent);
+            g.drawCenteredString(this.font, Fonts.body(status), cx + cw / 2, cy + ch - 14, theme().accent);
         }
     }
 
     private void drawStat(GuiGraphics g, Theme t, int x, int y, int w, String n, String l) {
         Draw.roundRectBorder(g, x, y, w, 40, 8, t.panel2, t.border());
-        g.drawCenteredString(this.font, n, x + w / 2, y + 10, t.text);
-        g.drawCenteredString(this.font, l, x + w / 2, y + 24, t.muted);
+        g.drawCenteredString(this.font, Fonts.display(n), x + w / 2, y + 10, t.text);
+        g.drawCenteredString(this.font, Fonts.body(l), x + w / 2, y + 24, t.muted);
     }
 
-    private void drawBig(GuiGraphics g, String s, int x, int y, int color, float scale) {
+    private void drawBig(GuiGraphics g, Component c, int x, int y, int color, float scale) {
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
         g.pose().scale(scale, scale, 1f);
-        g.drawString(this.font, s, 0, 0, color, false);
+        g.drawString(this.font, c, 0, 0, color, false);
         g.pose().popPose();
     }
 

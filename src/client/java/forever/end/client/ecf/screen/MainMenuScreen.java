@@ -3,6 +3,7 @@ package forever.end.client.ecf.screen;
 import forever.end.client.ecf.ClientState;
 import forever.end.client.ecf.Theme;
 import forever.end.client.ecf.ui.Draw;
+import forever.end.client.ecf.ui.Fonts;
 import forever.end.client.ecf.ui.UiButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
@@ -25,29 +26,29 @@ public class MainMenuScreen extends EcfScreen {
         int lx = 40;
         int mw = 236, mh = 28, gap = 9;
         int by = this.height / 2 - 12;
-        addRenderableWidget(new UiButton(lx, by, mw, mh, Component.literal("Одиночная игра"),
+        addRenderableWidget(new UiButton(lx, by, mw, mh, Fonts.body("Одиночная игра"),
                 UiButton.Style.MENU, () -> {
                     ClientState.event("join_world", "Открыт выбор мира");
                     this.minecraft.setScreen(new SelectWorldScreen(this));
                 }).icon("▶"));
-        addRenderableWidget(new UiButton(lx, by + (mh + gap), mw, mh, Component.literal("Сетевая игра"),
+        addRenderableWidget(new UiButton(lx, by + (mh + gap), mw, mh, Fonts.body("Сетевая игра"),
                 UiButton.Style.MENU, () -> {
                     ClientState.event("join_server", "Открыт список серверов");
                     this.minecraft.setScreen(new JoinMultiplayerScreen(this));
                 }).icon("▤"));
-        addRenderableWidget(new UiButton(lx, by + (mh + gap) * 2, mw, mh, Component.literal("ClickGUI"),
+        addRenderableWidget(new UiButton(lx, by + (mh + gap) * 2, mw, mh, Fonts.body("ClickGUI"),
                 UiButton.Style.MENU_PRIMARY, () -> {
                     ClientState.event("open_clickgui", "Открыт из главного меню");
                     this.minecraft.setScreen(new ClickGuiScreen(this));
                 }).icon("◆").kbd("R-Shift"));
-        addRenderableWidget(new UiButton(lx, by + (mh + gap) * 3, mw, mh, Component.literal("Настройки"),
+        addRenderableWidget(new UiButton(lx, by + (mh + gap) * 3, mw, mh, Fonts.body("Настройки"),
                 UiButton.Style.MENU, () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))).icon("⚙"));
-        addRenderableWidget(new UiButton(lx, by + (mh + gap) * 4, mw, mh, Component.literal("Выход"),
+        addRenderableWidget(new UiButton(lx, by + (mh + gap) * 4, mw, mh, Fonts.body("Выход"),
                 UiButton.Style.MENU, () -> this.minecraft.stop()).icon("⏻"));
 
         // Мини-профиль (user-chip) внизу справа.
         String name = displayName();
-        int contentW = Math.max(this.font.width(name), this.font.width(ClientState.roleLabel) + 8);
+        int contentW = Math.max(this.font.width(Fonts.display(name)), this.font.width(Fonts.body(ClientState.roleLabel)) + 8);
         chipH = 40;
         chipW = 10 + 26 + 8 + contentW + 10 + 26 + 8;
         chipX = this.width - 14 - chipW;
@@ -72,24 +73,27 @@ public class MainMenuScreen extends EcfScreen {
         int lx = 40;
 
         // вотермарк
-        g.drawString(this.font, "End Client Forever", lx, 40, 0xFFFFFFFF, true);
-        Draw.roundRect(g, lx + this.font.width("End Client Forever") + 6, 38, this.font.width("v0.6-test") + 8, 12, 3, 0xFFFFFFFF);
-        g.drawString(this.font, "v0.6-test", lx + this.font.width("End Client Forever") + 10, 40, t.accent, false);
+        Component wm = Fonts.display("End Client Forever");
+        g.drawString(this.font, wm, lx, 40, 0xFFFFFFFF, true);
+        int wmW = this.font.width(wm);
+        Component ver = Fonts.body("v0.6-test");
+        Draw.roundRect(g, lx + wmW + 6, 38, this.font.width(ver) + 8, 12, 3, 0xFFFFFFFF);
+        g.drawString(this.font, ver, lx + wmW + 10, 40, t.accent, false);
 
         // бейдж "Клиент активен"
         int badgeY = this.height / 2 - 96;
-        String badge = "Клиент активен";
+        Component badge = Fonts.body("Клиент активен");
         int badgeW = this.font.width(badge) + 26;
         Draw.roundRect(g, lx, badgeY, badgeW, 16, 8, t.accent);
         Draw.roundRect(g, lx + 9, badgeY + 6, 4, 4, 2, 0xFFFFFFFF);
         g.drawString(this.font, badge, lx + 18, badgeY + 4, 0xFFFFFFFF, false);
 
-        // тайтл
-        drawTitle(g, "END CLIENT", lx, this.height / 2 - 78, 0xFFFFFFFF, false, t);
-        drawTitle(g, "FOREVER", lx, this.height / 2 - 50, 0xFFFFFFFF, true, t);
+        // тайтл (настоящий дисплейный шрифт)
+        drawTitle(g, "END CLIENT", lx, this.height / 2 - 80, 0xFFFFFFFF, false);
+        drawTitle(g, "FOREVER", lx, this.height / 2 - 50, 0xFFFFFFFF, true);
 
         // версия внизу слева
-        g.drawString(this.font, "End Client Forever 0.6-test · MC 1.21.4 · Fabric", lx, this.height - 18, 0xFFE8E8EC, true);
+        g.drawString(this.font, Fonts.body("End Client Forever 0.6-test · MC 1.21.4 · Fabric"), lx, this.height - 18, 0xFFE8E8EC, true);
 
         // мини-профиль
         boolean chipHover = mx >= chipX && mx <= chipX + chipClickW && my >= chipY && my <= chipY + chipH;
@@ -99,30 +103,36 @@ public class MainMenuScreen extends EcfScreen {
         Draw.roundRect(g, avX, avY, avS, avS, avS / 2, t.avatarA);
         Draw.roundRect(g, avX, avY + avS / 2, avS, avS / 2, avS / 2, t.avatarB);
         String name = displayName();
-        g.drawString(this.font, name.substring(0, 1).toUpperCase(), avX + (avS - this.font.width(name.substring(0, 1))) / 2, avY + avS / 2 - 4, 0xFFFFFFFF, false);
+        Component avl = Fonts.display(name.substring(0, 1).toUpperCase());
+        g.drawString(this.font, avl, avX + (avS - this.font.width(avl)) / 2, avY + avS / 2 - 4, 0xFFFFFFFF, false);
         int tx = avX + avS + 8;
-        g.drawString(this.font, name, tx, chipY + 9, chipHover ? t.accent : t.text, false);
-        int rbW = this.font.width(ClientState.roleLabel) + 12;
+        g.drawString(this.font, Fonts.display(name), tx, chipY + 9, chipHover ? t.accent : t.text, false);
+        Component role = Fonts.body(ClientState.roleLabel);
+        int rbW = this.font.width(role) + 12;
         Draw.roundRect(g, tx, chipY + 22, rbW, 12, 6, t.accentSoft());
-        g.drawString(this.font, ClientState.roleLabel, tx + 6, chipY + 24, t.accent, false);
+        g.drawString(this.font, role, tx + 6, chipY + 24, t.accent, false);
     }
 
-    /** Большой заголовок; outline=true рисует контурный текст (как .l2 в HTML). */
-    private void drawTitle(GuiGraphics g, String s, int x, int y, int color, boolean outline, Theme t) {
-        float sc = 2.9f;
+    /** Большой заголовок дисплейным шрифтом; outline=true — контурный текст (как .l2 в HTML). */
+    private void drawTitle(GuiGraphics g, String s, int x, int y, int color, boolean outline) {
+        float sc = 3.0f;
+        Component c = Fonts.display(s);
+        if (outline) {
+            int oc = 0xFFFFFFFF;
+            int[][] off = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
+            for (int[] d : off) drawScaled(g, c, x + d[0], y + d[1], sc, oc);
+            drawScaled(g, c, x, y, sc, 0xFF12131A);
+        } else {
+            drawScaled(g, c, x, y, sc, color);
+        }
+    }
+
+    /** Рисует Component с масштабом; смещение (x,y) — в экранных пикселях (тонкий контур). */
+    private void drawScaled(GuiGraphics g, Component c, int x, int y, float sc, int color) {
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
         g.pose().scale(sc, sc, 1f);
-        if (outline) {
-            int oc = 0xFFFFFFFF;
-            g.drawString(this.font, s, -1, 0, oc, false);
-            g.drawString(this.font, s, 1, 0, oc, false);
-            g.drawString(this.font, s, 0, -1, oc, false);
-            g.drawString(this.font, s, 0, 1, oc, false);
-            g.drawString(this.font, s, 0, 0, 0xFF12131A, false);
-        } else {
-            g.drawString(this.font, s, 0, 0, color, false);
-        }
+        g.drawString(this.font, c, 0, 0, color, false);
         g.pose().popPose();
     }
 

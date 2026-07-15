@@ -3,6 +3,7 @@ package forever.end.client.ecf.screen;
 import forever.end.client.ecf.ClientState;
 import forever.end.client.ecf.Theme;
 import forever.end.client.ecf.ui.Draw;
+import forever.end.client.ecf.ui.Fonts;
 import forever.end.client.ecf.ui.UiButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -28,10 +29,10 @@ public abstract class EcfScreen extends Screen {
         int x2 = this.width - pad - segW;
         int x1 = x2 - gap - segW;
         Theme cur = theme();
-        segRed = new UiButton(x1, y, segW, segH, Component.literal("Red"),
+        segRed = new UiButton(x1, y, segW, segH, Fonts.body("Red"),
                 cur == Theme.RED ? UiButton.Style.SEG_ACTIVE : UiButton.Style.SEG_INACTIVE,
                 () -> switchTheme(Theme.RED));
-        segClaude = new UiButton(x2, y, segW, segH, Component.literal("Claude"),
+        segClaude = new UiButton(x2, y, segW, segH, Fonts.body("Claude"),
                 cur == Theme.CLAUDE ? UiButton.Style.SEG_ACTIVE : UiButton.Style.SEG_INACTIVE,
                 () -> switchTheme(Theme.CLAUDE));
         addRenderableWidget(segRed);
@@ -77,8 +78,8 @@ public abstract class EcfScreen extends Screen {
     protected void renderTopBar(GuiGraphics g) {
         int mx = 12, my = 8, ms = 20;
         Draw.roundRect(g, mx, my, ms, ms, 6, theme().accent);
-        g.drawString(this.font, "E", mx + (ms - this.font.width("E")) / 2, my + ms / 2 - 4, 0xFFFFFFFF, false);
-        g.drawString(this.font, "End Client Forever", mx + ms + 8, my + ms / 2 - 4, 0xFFFFFFFF, true);
+        g.drawString(this.font, Fonts.display("E"), mx + (ms - this.font.width(Fonts.display("E"))) / 2, my + ms / 2 - 4, 0xFFFFFFFF, false);
+        g.drawString(this.font, Fonts.display("End Client Forever"), mx + ms + 8, my + ms / 2 - 4, 0xFFFFFFFF, true);
         if (segRed != null && segClaude != null) {
             int cx = segRed.getX() - 4;
             int cy = segRed.getY() - 2;

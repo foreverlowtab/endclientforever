@@ -9,7 +9,9 @@ import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
-/** Кастомная кнопка в стиле HTML-прототипа (accent-таблетки, меню-кнопки, иконки). */
+/** Кастомная кнопка в стиле HTML-прототипа (accent-таблетки, меню-кнопки, иконки).
+ *  Текст кнопки рисуется как Component — шрифт задаётся при создании (Fonts.body/display).
+ *  Иконки (.icon) и клавиши-чипы рисуются отдельно. */
 public class UiButton extends AbstractButton {
     public enum Style { PRIMARY, GHOST, MENU, MENU_PRIMARY, ICON_CIRCLE, SEG_ACTIVE, SEG_INACTIVE }
 
@@ -41,8 +43,9 @@ public class UiButton extends AbstractButton {
         this.defaultButtonNarrationText(out);
     }
 
-    private void text(GuiGraphics g, String s, int cx, int cy, int color) {
-        g.drawString(font, s, cx - font.width(s) / 2, cy - 4, color, false);
+    /** Центрированный текст (Component — с учётом его шрифта). */
+    private void textC(GuiGraphics g, Component c, int cx, int cy, int color) {
+        g.drawString(font, c, cx - font.width(c) / 2, cy - 4, color, false);
     }
 
     @Override
@@ -53,7 +56,7 @@ public class UiButton extends AbstractButton {
         hoverT += ((hov ? 1f : 0f) - hoverT) * 0.28f;
         float ht = hoverT;
         int cy = y + h / 2;
-        String msg = getMessage().getString();
+        Component msg = getMessage();
 
         switch (style) {
             case PRIMARY: {
@@ -61,14 +64,14 @@ public class UiButton extends AbstractButton {
                 int base = Draw.lerpColor(t.accent, t.accent2, ht);
                 Draw.roundRect(g, x, y + 3 + yo, w, h, h / 2, Draw.alpha(t.accent, 0x3A));
                 Draw.roundRect(g, x, y + yo, w, h, h / 2, this.active ? base : Draw.alpha(base, 0x88));
-                text(g, msg, x + w / 2, cy + yo, 0xFFFFFFFF);
+                textC(g, msg, x + w / 2, cy + yo, 0xFFFFFFFF);
                 break;
             }
             case GHOST: {
                 int yo = (int) (-2 * ht);
                 int bd = Draw.lerpColor(t.border(), t.accent, ht);
                 Draw.roundRectBorder(g, x, y + yo, w, h, h / 2, t.panel2, bd);
-                text(g, msg, x + w / 2, cy + yo, Draw.lerpColor(t.text, t.accent, ht));
+                textC(g, msg, x + w / 2, cy + yo, Draw.lerpColor(t.text, t.accent, ht));
                 break;
             }
             case MENU:
@@ -84,7 +87,9 @@ public class UiButton extends AbstractButton {
                     icoBg = 0x33FFFFFF;
                     icoFg = 0xFFFFFFFF;
                 } else {
-                    bg = Draw.lerpColor(t.panel, t.accentSoft(), ht);
+                    // Фон всегда НЕПРОЗРАЧНЫЙ: светлая панель → лёгкий accent-тинт при наведении.
+                    int tint = Draw.lerpColor(t.panel, t.accent, 0.12f);
+                    bg = Draw.lerpColor(t.panel, tint, ht);
                     bd = Draw.lerpColor(t.border(), t.accent, ht);
                     lbl = Draw.lerpColor(t.text, t.accent, ht);
                     icoBg = Draw.lerpColor(t.accentSoft(), t.accent, ht);
@@ -98,13 +103,14 @@ public class UiButton extends AbstractButton {
                 if (!icon.isEmpty()) g.drawString(font, icon, ix + (is - font.width(icon)) / 2, iy + is / 2 - 4, icoFg, false);
                 g.drawString(font, msg, ix + is + 10, cy - 4, lbl, false);
                 if (!kbd.isEmpty()) {
-                    int kw = font.width(kbd) + 10, kh = 14;
+                    Component kc = Fonts.body(kbd);
+                    int kw = font.width(kc) + 10, kh = 14;
                     int kx = bx + w - 8 - kw, ky = y + (h - kh) / 2;
                     int kbg = prim ? 0x22FFFFFF : t.panel2;
                     int kbd2 = prim ? 0x55FFFFFF : t.border();
                     int kfg = prim ? 0xFFFFFFFF : Draw.lerpColor(t.muted, t.accent, ht);
                     Draw.roundRectBorder(g, kx, ky, kw, kh, 4, kbg, kbd2);
-                    g.drawString(font, kbd, kx + 5, ky + kh / 2 - 4, kfg, false);
+                    g.drawString(font, kc, kx + 5, ky + kh / 2 - 4, kfg, false);
                 }
                 break;
             }
@@ -112,16 +118,17 @@ public class UiButton extends AbstractButton {
                 int bg = Draw.lerpColor(t.panel2, t.accent, ht);
                 int fg = Draw.lerpColor(t.muted, 0xFFFFFFFF, ht);
                 Draw.roundRect(g, x, y, w, h, h / 2, bg);
-                text(g, msg, x + w / 2, cy, fg);
+                // Сообщение ICON_CIRCLE — это глиф (✕/⏻): рисуем дефолтным шрифтом.
+                textC(g, msg, x + w / 2, cy, fg);
                 break;
             }
             case SEG_ACTIVE: {
                 Draw.roundRect(g, x, y, w, h, h / 2, 0xFFFFFFFF);
-                text(g, msg, x + w / 2, cy, t.accent);
+                textC(g, msg, x + w / 2, cy, t.accent);
                 break;
             }
             case SEG_INACTIVE: {
-                text(g, msg, x + w / 2, cy, Draw.alpha(0xFFFFFFFF, hov ? 0xFF : 0xCC));
+                textC(g, msg, x + w / 2, cy, Draw.alpha(0xFFFFFFFF, hov ? 0xFF : 0xCC));
                 break;
             }
         }
