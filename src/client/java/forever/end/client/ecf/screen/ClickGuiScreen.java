@@ -9,6 +9,7 @@ import forever.end.client.ecf.module.Category;
 import forever.end.client.ecf.module.Module;
 import forever.end.client.ecf.module.Modules;
 import forever.end.client.ecf.ui.Draw;
+import forever.end.client.ecf.ui.Fonts;
 import forever.end.client.ecf.ui.UiButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
@@ -56,19 +57,14 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
-        // Затемнённое родительское меню позади.
-        if (parent != null) {
-            parent.render(g, -1, -1, pt);
-            g.fill(0, 0, this.width, this.height, 0xB8060708);
-        } else {
-            g.fill(0, 0, this.width, this.height, 0xE6060708);
-        }
+        // Полностью непрозрачный тёмный фон — родительское меню НЕ просвечивает.
+        g.fillGradient(0, 0, this.width, this.height, 0xFF0B0C0E, 0xFF060708);
         Theme t = theme();
 
         // верхняя таблетка-бар
         Draw.pillBorder(g, barX, barY, barW, barH, t.panel, t.border());
         Draw.roundRect(g, barX + 16, barY + barH / 2 - 4, 8, 8, 4, t.accent);
-        g.drawString(this.font, "ClickGUI", barX + 30, barY + barH / 2 - 4, t.text, false);
+        g.drawString(this.font, Fonts.display("ClickGUI"), barX + 30, barY + barH / 2 - 4, t.text, false);
         Draw.roundRectBorder(g, searchX, barY + 6, searchW, barH - 12, (barH - 12) / 2, t.panel2,
                 search != null && search.isFocused() ? t.accent : t.border());
 
@@ -100,13 +96,13 @@ public class ClickGuiScreen extends Screen {
             Draw.roundRect(g, x, y + 3, colW, cardH, 12, 0x33000000);
             Draw.roundRectBorder(g, x, y, colW, cardH, 12, t.panel, t.border());
 
-            // шапка категории
+            // шапка категории (иконка — дефолтный шрифт для глифов)
             Draw.roundRect(g, x + 12, y + 6, 18, 18, 5, t.accentSoft());
             g.drawString(this.font, cat.icon, x + 12 + (18 - this.font.width(cat.icon)) / 2, y + 6 + 5, t.accent, false);
-            g.drawString(this.font, cat.name, x + 36, y + 11, t.text, false);
+            g.drawString(this.font, Fonts.display(cat.name), x + 36, y + 11, t.text, false);
             int on = 0;
             for (Module m : cat.modules) if (m.enabled) on++;
-            String cnt = on + "/" + cat.modules.size();
+            Component cnt = Fonts.body(on + "/" + cat.modules.size());
             int cntW = this.font.width(cnt) + 12;
             Draw.roundRect(g, x + colW - 12 - cntW, y + 8, cntW, 14, 7, t.panel2);
             g.drawString(this.font, cnt, x + colW - 12 - cntW + 6, y + 11, t.muted, false);
@@ -121,7 +117,7 @@ public class ClickGuiScreen extends Screen {
                 } else if (rowHover) {
                     Draw.roundRect(g, rx, ry, rw, rowH - 3, 6, t.panel2);
                 }
-                g.drawString(this.font, m.name, rx + 8, ry + (rowH - 3) / 2 - 4, m.enabled ? t.accent : t.text, false);
+                g.drawString(this.font, Fonts.body(m.name), rx + 8, ry + (rowH - 3) / 2 - 4, m.enabled ? t.accent : t.text, false);
 
                 // тоггл
                 int swW = 26, swH = 14, swX = rx + rw - 8 - swW, swY = ry + (rowH - 3 - swH) / 2;
@@ -130,11 +126,12 @@ public class ClickGuiScreen extends Screen {
                 Draw.roundRect(g, knob, swY + 2, swH - 4, swH - 4, (swH - 4) / 2, 0xFFFFFFFF);
 
                 if (!m.key.isEmpty()) {
-                    int kw = this.font.width(m.key) + 8;
+                    Component kc = Fonts.body(m.key);
+                    int kw = this.font.width(kc) + 8;
                     int kx = swX - 6 - kw;
                     Draw.roundRectBorder(g, kx, ry + (rowH - 3) / 2 - 6, kw, 12, 4, t.panel2,
                             m.enabled ? Draw.alpha(t.accent, 0x66) : t.border());
-                    g.drawString(this.font, m.key, kx + 4, ry + (rowH - 3) / 2 - 4, m.enabled ? t.accent : t.muted, false);
+                    g.drawString(this.font, kc, kx + 4, ry + (rowH - 3) / 2 - 4, m.enabled ? t.accent : t.muted, false);
                 }
                 entries.add(new Entry(m, rx, ry, rw, rowH - 3));
                 ry += rowH;
@@ -147,7 +144,7 @@ public class ClickGuiScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
         super.render(g, mx, my, pt);
-        g.drawCenteredString(this.font, "Нажми R-Shift или Esc, чтобы закрыть", this.width / 2, this.height - 16, 0xFFE0E0E4);
+        g.drawCenteredString(this.font, Fonts.body("Нажми R-Shift или Esc, чтобы закрыть"), this.width / 2, this.height - 16, 0xFFE0E0E4);
     }
 
     @Override
