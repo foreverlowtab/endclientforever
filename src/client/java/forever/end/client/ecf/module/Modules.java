@@ -122,14 +122,28 @@ public final class Modules {
             new Module("Custom Clouds", "", false),
             new Module("Bloom", "", true))),
         new Category("HUD", "▦", List.of(
-            new Module("Watermark", "", true),
-            new Module("FPS", "", true),
-            new Module("Keystrokes", "", true),
-            new Module("CPS", "", true),
-            new Module("Coordinates", "", false),
-            new Module("Armor HUD", "", true),
-            new Module("Potion HUD", "", false),
-            new Module("Clock", "", false))),
+            new Module("Watermark", "", true)
+                .add(new Setting.Bool("Профиль", true))
+                .add(new Setting.Bool("Версия", true)),
+            new Module("FPS", "", true)
+                .add(new Setting.Bool("График", true)),
+            new Module("Keystrokes", "", true)
+                .add(new Setting.Bool("Пробел", true))
+                .add(new Setting.Bool("Кнопки мыши", true)),
+            new Module("CPS", "", true)
+                .add(new Setting.Bool("ЛКМ+ПКМ", true)),
+            new Module("Coordinates", "", false)
+                .add(new Setting.Bool("Направление", true))
+                .add(new Setting.Bool("Биом", false)),
+            new Module("Armor HUD", "", true)
+                .add(new Setting.Bool("Прочность", true))
+                .add(new Setting.Bool("Рука", true)),
+            new Module("Potion HUD", "", false)
+                .add(new Setting.Bool("Время", true)),
+            new Module("Clock", "", false)
+                .add(new Setting.Bool("Секунды", true))
+                .add(new Setting.Mode("Формат", 0, "24ч", "12ч"))
+                .add(new Setting.Bool("Дата", false)))),
         new Category("Interface", "◈", List.of(
             new Module("Chroma", "", true),
             new Module("Custom Crosshair", "", true),

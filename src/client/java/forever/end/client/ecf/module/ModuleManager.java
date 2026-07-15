@@ -1,6 +1,7 @@
 package forever.end.client.ecf.module;
 
 import forever.end.client.ecf.fx.EffectFx;
+import forever.end.client.ecf.hud.HudManager;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -41,6 +42,8 @@ public final class ModuleManager {
                     if (m.enabled) m.doHud(g, partial);
                 }
             }
+            // HUD-элементы категории HUD (с позициями/масштабом из редактора).
+            HudManager.renderGame(g, partial);
         });
 
         // Клиентский тик (логика эффектов).

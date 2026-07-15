@@ -55,6 +55,11 @@ public class ClickGuiScreen extends Screen {
 
         addRenderableWidget(new UiButton(barX + barW - 8 - 26, barY + (barH - 26) / 2, 26, 26,
                 Component.literal("✕"), UiButton.Style.ICON_CIRCLE, this::onClose));
+
+        // Кнопка открытия редактора HUD.
+        addRenderableWidget(new UiButton(barX + 116, barY + (barH - 18) / 2, 66, 18,
+                Fonts.body("HUD ▦"), UiButton.Style.GHOST,
+                () -> this.minecraft.setScreen(new HudEditorScreen(this))));
     }
 
     @Override

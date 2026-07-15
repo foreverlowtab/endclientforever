@@ -6,6 +6,7 @@ import forever.end.client.ecf.EcfConfig;
 import forever.end.client.ecf.module.ModuleManager;
 import forever.end.client.ecf.screen.AuthScreen;
 import forever.end.client.ecf.screen.ClickGuiScreen;
+import forever.end.client.ecf.screen.HudEditorScreen;
 import forever.end.client.ecf.screen.MainMenuScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -17,6 +18,7 @@ import org.lwjgl.glfw.GLFW;
 
 public class EndClientForeverClient implements ClientModInitializer {
     private static KeyMapping clickGuiKey;
+    private static KeyMapping hudEditorKey;
 
     @Override
     public void onInitializeClient() {
@@ -27,6 +29,12 @@ public class EndClientForeverClient implements ClientModInitializer {
                 "key.forever-endclient.clickgui",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
+                "category.forever-endclient"));
+
+        hudEditorKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.forever-endclient.hudeditor",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
                 "category.forever-endclient"));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -45,6 +53,15 @@ public class EndClientForeverClient implements ClientModInitializer {
                     cur.onClose();
                 } else if (cur instanceof MainMenuScreen) {
                     client.setScreen(new ClickGuiScreen(cur));
+                }
+            }
+            while (hudEditorKey.consumeClick()) {
+                if (!ClientState.authed) continue;
+                Screen cur = client.screen;
+                if (cur instanceof HudEditorScreen) {
+                    cur.onClose();
+                } else {
+                    client.setScreen(new HudEditorScreen(cur));
                 }
             }
         });
