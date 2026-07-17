@@ -2,6 +2,7 @@ package forever.end.client.ecf.module;
 
 import java.util.List;
 
+import forever.end.client.ecf.fx.AnimationFx;
 import forever.end.client.ecf.fx.CameraFx;
 import forever.end.client.ecf.fx.CosmeticFx;
 import forever.end.client.ecf.fx.EffectFx;
@@ -103,12 +104,39 @@ public final class Modules {
                 .add(color())
                 .world(EffectFx::blockRender))),
         new Category("Animations", "◐", List.of(
-            new Module("Old Animations", "", true),
-            new Module("3D Skin Layers", "", true),
-            new Module("Emotes", "B", false),
-            new Module("Custom Rotations", "", false),
-            new Module("Sprint FX", "", true),
-            new Module("Item Physics", "", false))),
+            new Module("Old Animations", "", true)
+                .add(new Setting.Mode("Стиль", 0, "Дуга", "Клинок", "Круг"))
+                .add(new Setting.Num("Длина", 1.0, 0.5, 2.0, 0.1))
+                .add(new Setting.Color("Цвет", 0xFFFFFFFF, true))
+                .world(AnimationFx::oldSwingRender),
+            new Module("3D Skin Layers", "", true)
+                .add(new Setting.Mode("Слои", 1, "Голова", "Голова+тело", "Полностью"))
+                .add(new Setting.Num("Толщина", 0.06, 0.02, 0.15, 0.01))
+                .add(new Setting.Num("Прозрачность", 35, 10, 90, 1))
+                .add(new Setting.Color("Цвет", 0xFFFFFFFF, true))
+                .world(AnimationFx::skinLayers),
+            new Module("Emotes", "B", false)
+                .add(new Setting.Mode("Эмоция", 0, "Привет", "Сердце", "Салют", "Спираль"))
+                .add(new Setting.Num("Скорость", 1.0, 0.3, 2.5, 0.1))
+                .add(new Setting.Bool("Подпись", true))
+                .add(new Setting.Color("Цвет", 0xFFE11D2A, false))
+                .tick(AnimationFx::emoteTick)
+                .world(AnimationFx::emoteRender),
+            new Module("Custom Rotations", "", false)
+                .add(new Setting.Mode("Тело", 0, "Статичное", "Вперёд по камере", "Ванильное"))
+                .tick(AnimationFx::rotationTick)
+                .onDisable(AnimationFx::rotationReset),
+            new Module("Sprint FX", "", true)
+                .add(new Setting.Mode("Стиль", 0, "Линии", "Туннель", "Частицы"))
+                .add(new Setting.Num("Интенсивность", 55, 10, 100, 1))
+                .add(new Setting.Color("Цвет", 0xFFFFFFFF, true))
+                .tick(AnimationFx::sprintTick)
+                .hud(AnimationFx::sprintHud),
+            new Module("Item Physics", "", false)
+                .add(new Setting.Mode("Стиль", 0, "Кольцо", "Свечение", "Подпись"))
+                .add(new Setting.Num("Радиус", 6, 2, 16, 1))
+                .add(new Setting.Color("Цвет", 0xFFFFFFFF, true))
+                .world(AnimationFx::itemPhysics))),
         new Category("Camera", "◉", List.of(
             new Module("Zoom", "C", true)
                 .add(new Setting.Num("Кратность", 3.0, 1.5, 5.0, 0.5))
