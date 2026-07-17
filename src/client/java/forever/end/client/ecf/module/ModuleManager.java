@@ -1,5 +1,6 @@
 package forever.end.client.ecf.module;
 
+import forever.end.client.ecf.fx.CameraFx;
 import forever.end.client.ecf.fx.EffectFx;
 import forever.end.client.ecf.hud.HudManager;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -55,6 +56,9 @@ public final class ModuleManager {
                 }
             }
         });
+
+        // Камера: общий координатор (Zoom / FOV Changer / No Hurt Cam / Cinematic / Freelook).
+        ClientTickEvents.END_CLIENT_TICK.register(CameraFx::onClientTick);
 
         // Атака по сущности (Hit / Kill Effect).
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {

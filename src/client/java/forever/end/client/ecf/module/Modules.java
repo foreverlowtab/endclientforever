@@ -2,6 +2,7 @@ package forever.end.client.ecf.module;
 
 import java.util.List;
 
+import forever.end.client.ecf.fx.CameraFx;
 import forever.end.client.ecf.fx.CosmeticFx;
 import forever.end.client.ecf.fx.EffectFx;
 import forever.end.client.ecf.fx.InterfaceFx;
@@ -109,12 +110,18 @@ public final class Modules {
             new Module("Sprint FX", "", true),
             new Module("Item Physics", "", false))),
         new Category("Camera", "◉", List.of(
-            new Module("Zoom", "C", true),
+            new Module("Zoom", "C", true)
+                .add(new Setting.Num("Кратность", 3.0, 1.5, 5.0, 0.5))
+                .add(new Setting.Bool("Плавно", true))
+                .add(new Setting.Num("Скорость", 0.5, 0.1, 1.0, 0.05)),
             new Module("Freelook", "V", false),
             new Module("No Hurt Cam", "", true),
             new Module("Cinematic Camera", "", false),
-            new Module("FOV Changer", "", true),
-            new Module("Motion Blur", "", false))),
+            new Module("FOV Changer", "", false)
+                .add(new Setting.Num("FOV", 90, 30, 110, 1)),
+            new Module("Motion Blur", "", false)
+                .add(new Setting.Num("Интенсивность", 45, 10, 90, 1))
+                .hud(CameraFx::motionHud))),
         new Category("World", "☀", List.of(
             new Module("Fullbright", "", true),
             new Module("Time Changer", "", false),

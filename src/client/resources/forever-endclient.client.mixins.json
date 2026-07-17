@@ -3,7 +3,10 @@
 	"package": "forever.end.client.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ExampleClientMixin"
+		"ExampleClientMixin",
+		"GameRendererMixin",
+		"CameraMixin",
+		"EntityTurnMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
