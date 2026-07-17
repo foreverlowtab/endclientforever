@@ -13,6 +13,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -198,16 +200,23 @@ public final class AnimationFx {
     private static long emoteStart = 0L;
     private static long emoteUntil = 0L;
     private static String emoteStyle = "";
+    private static boolean emoteModel = false;
+    private static String emoteAnim = "";
+
+    /** true пока рендерится модель локального игрока (выставляется миксином). */
+    public static boolean animatingLocalPlayer = false;
 
     public static void emoteTick(Minecraft mc, Module m) {
         if (mc.player == null) return;
         boolean down = mc.screen == null && mc.getWindow() != null
                 && GLFW.glfwGetKey(mc.getWindow().getWindow(), GLFW.GLFW_KEY_B) == GLFW.GLFW_PRESS;
         if (down && !bPrev) {
+            emoteModel = "Модель".equals(m.mode("Режим"));
             emoteStyle = m.mode("Эмоция");
+            emoteAnim = m.mode("Анимация");
             float speed = Math.max(0.3f, m.numf("Скорость"));
             emoteStart = System.currentTimeMillis();
-            emoteUntil = emoteStart + (long) (1800f / speed);
+            emoteUntil = emoteStart + (long) ((emoteModel ? 2600f : 1800f) / speed);
         }
         bPrev = down;
     }
@@ -221,17 +230,19 @@ public final class AnimationFx {
         float prog = Math.min(1f, (now - emoteStart) / dur);
         int col = m.color("Цвет");
         String style = emoteStyle.isEmpty() ? m.mode("Эмоция") : emoteStyle;
-        atPlayer(ctx, true, (ps, buf, p, pt) -> {
-            float head = p.getBbHeight();
-            switch (style) {
-                case "Сердце" -> emoteHeart(ps, buf, head, prog, col);
-                case "Салют" -> emoteFirework(ps, buf, head, prog, col);
-                case "Спираль" -> emoteSpiral(ps, buf, head, prog, col);
-                default -> emoteWave(ps, buf, head, prog, col);
-            }
-        });
+        if (!emoteModel) {
+            atPlayer(ctx, true, (ps, buf, p, pt) -> {
+                float head = p.getBbHeight();
+                switch (style) {
+                    case "Сердце" -> emoteHeart(ps, buf, head, prog, col);
+                    case "Салют" -> emoteFirework(ps, buf, head, prog, col);
+                    case "Спираль" -> emoteSpiral(ps, buf, head, prog, col);
+                    default -> emoteWave(ps, buf, head, prog, col);
+                }
+            });
+        }
         if (m.bool("Подпись")) {
-            String label = switch (style) {
+            String label = emoteModel ? modelLabel(emoteAnim) : switch (style) {
                 case "Сердце" -> "<3";
                 case "Салют" -> "\\o/";
                 case "Спираль" -> "~";
@@ -302,6 +313,91 @@ public final class AnimationFx {
             ps.popPose();
         }
         ps.popPose();
+    }
+
+    /** Сброс проигрывания эмоции (для onDisable). */
+    public static void emoteReset(Module m) {
+        emoteUntil = 0L;
+    }
+
+    private static String modelLabel(String anim) {
+        return switch (anim) {
+            case "Руки вверх" -> "\\o/";
+            case "Аплодисменты" -> "*clap*";
+            case "Кивок" -> "Да";
+            case "Нет" -> "Нет";
+            case "Танец 1", "Танец 2" -> "\u266a";
+            default -> "Привет!";
+        };
+    }
+
+    /**
+     * Накладывает позу эмоции прямо на модель локального игрока (видно в F5 / со стороны).
+     * Вызывается из миксина HumanoidModel#setupAnim (TAIL), пока эмоция активна и режим = "Модель".
+     * Углы подобраны "на глаз" и легко правятся под вкус.
+     */
+    public static void applyEmotePose(PlayerModel model) {
+        long now = System.currentTimeMillis();
+        if (!emoteModel || emoteUntil == 0L || now >= emoteUntil) return;
+        if (Minecraft.getInstance().screen != null) return;
+        float sec = (now - emoteStart) / 1000f;
+
+        ModelPart ra = model.rightArm, la = model.leftArm;
+        ModelPart rl = model.rightLeg, ll = model.leftLeg;
+        ModelPart hd = model.head, bd = model.body;
+
+        // Нейтральная стойка (перекрываем ванильную анимацию ходьбы/атаки).
+        ra.xRot = ra.yRot = ra.zRot = 0f;
+        la.xRot = la.yRot = la.zRot = 0f;
+        rl.xRot = rl.yRot = rl.zRot = 0f;
+        ll.xRot = ll.yRot = ll.zRot = 0f;
+        hd.xRot = hd.yRot = hd.zRot = 0f;
+        bd.xRot = bd.yRot = bd.zRot = 0f;
+
+        switch (emoteAnim) {
+            case "Руки вверх" -> {
+                float s = Mth.sin(sec * 4f) * 0.15f;
+                ra.zRot = -2.9f + s;
+                la.zRot = 2.9f - s;
+            }
+            case "Аплодисменты" -> {
+                float c = Mth.sin(sec * 12f) * 0.25f;
+                ra.xRot = -1.4f; la.xRot = -1.4f;
+                ra.zRot = 0.35f + c; la.zRot = -0.35f - c;
+            }
+            case "Кивок" -> {
+                hd.xRot = 0.30f + Mth.sin(sec * 6f) * 0.30f;
+                ra.zRot = 0.08f; la.zRot = -0.08f;
+            }
+            case "Нет" -> {
+                hd.yRot = Mth.sin(sec * 6f) * 0.6f;
+                ra.zRot = 0.08f; la.zRot = -0.08f;
+            }
+            case "Танец 1" -> {
+                float a = Mth.sin(sec * 4f);
+                bd.zRot = a * 0.22f;
+                hd.zRot = a * 0.15f;
+                ra.zRot = -1.2f + a * 0.6f;
+                la.zRot = 1.2f + a * 0.6f;
+                rl.xRot = a * 0.2f;
+                ll.xRot = -a * 0.2f;
+            }
+            case "Танец 2" -> {
+                float a = Mth.sin(sec * 5f), b = Mth.cos(sec * 5f);
+                bd.yRot = a * 0.4f;
+                hd.yRot = -a * 0.4f;
+                ra.xRot = -1.5f; la.xRot = -1.5f;
+                ra.zRot = 0.2f + b * 0.8f;
+                la.zRot = -0.2f - b * 0.8f;
+                rl.xRot = b * 0.3f;
+                ll.xRot = -b * 0.3f;
+            }
+            default -> { // Привет
+                ra.zRot = -2.2f + Mth.sin(sec * 10f) * 0.25f;
+                ra.xRot = -0.15f;
+                hd.yRot = 0.15f;
+            }
+        }
     }
 
     // ==================== Custom Rotations ====================

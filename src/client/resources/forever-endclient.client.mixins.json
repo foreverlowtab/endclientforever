@@ -6,7 +6,9 @@
 		"ExampleClientMixin",
 		"GameRendererMixin",
 		"CameraMixin",
-		"EntityTurnMixin"
+		"EntityTurnMixin",
+		"PlayerRendererMixin",
+		"PlayerEmoteMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

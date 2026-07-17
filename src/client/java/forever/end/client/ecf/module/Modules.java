@@ -116,12 +116,15 @@ public final class Modules {
                 .add(new Setting.Color("Цвет", 0xFFFFFFFF, true))
                 .world(AnimationFx::skinLayers),
             new Module("Emotes", "B", false)
+                .add(new Setting.Mode("Режим", 0, "Эффект", "Модель"))
                 .add(new Setting.Mode("Эмоция", 0, "Привет", "Сердце", "Салют", "Спираль"))
+                .add(new Setting.Mode("Анимация", 0, "Привет", "Руки вверх", "Аплодисменты", "Кивок", "Нет", "Танец 1", "Танец 2"))
                 .add(new Setting.Num("Скорость", 1.0, 0.3, 2.5, 0.1))
                 .add(new Setting.Bool("Подпись", true))
                 .add(new Setting.Color("Цвет", 0xFFE11D2A, false))
                 .tick(AnimationFx::emoteTick)
-                .world(AnimationFx::emoteRender),
+                .world(AnimationFx::emoteRender)
+                .onDisable(AnimationFx::emoteReset),
             new Module("Custom Rotations", "", false)
                 .add(new Setting.Mode("Тело", 0, "Статичное", "Вперёд по камере", "Ванильное"))
                 .tick(AnimationFx::rotationTick)
