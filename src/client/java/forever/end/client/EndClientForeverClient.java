@@ -2,6 +2,8 @@ package forever.end.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import forever.end.client.ecf.ClientState;
+import forever.end.client.ecf.CommandManager;
+import forever.end.client.ecf.ConfigManager;
 import forever.end.client.ecf.EcfConfig;
 import forever.end.client.ecf.fx.InterfaceFx;
 import forever.end.client.ecf.module.ModuleManager;
@@ -10,6 +12,7 @@ import forever.end.client.ecf.screen.ClickGuiScreen;
 import forever.end.client.ecf.screen.HudEditorScreen;
 import forever.end.client.ecf.screen.MainMenuScreen;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
@@ -25,6 +28,10 @@ public class EndClientForeverClient implements ClientModInitializer {
     public void onInitializeClient() {
         EcfConfig.load();
         ModuleManager.init();
+        ConfigManager.init();
+        CommandManager.init();
+        // Гарантированное сохранение конфига при выходе из игры.
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ConfigManager.saveLocal());
 
         clickGuiKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.forever-endclient.clickgui",

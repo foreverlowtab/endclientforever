@@ -168,8 +168,7 @@ public final class Modules {
                 .onDisable(WorldFx::weatherReset),
             new Module("Custom Sky", "", false)
                 .add(new Setting.Color("Цвет", 0xFF7FB2FF, false))
-                .add(new Setting.Num("Плотность", 0.3, 0.0, 0.7, 0.05))
-                .hud(WorldFx::skyHud),
+                .add(new Setting.Num("Плотность", 0.5, 0.0, 1.0, 0.05)),
             new Module("Custom Clouds", "", false)
                 .add(new Setting.Mode("Облака", 2, "Выкл", "Быстрые", "Детальные"))
                 .tick(WorldFx::cloudsTick)

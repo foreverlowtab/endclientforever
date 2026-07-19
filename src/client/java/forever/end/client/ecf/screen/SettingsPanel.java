@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import forever.end.client.ecf.ClientState;
+import forever.end.client.ecf.ConfigManager;
 import forever.end.client.ecf.Theme;
 import forever.end.client.ecf.module.Module;
 import forever.end.client.ecf.module.setting.Setting;
@@ -42,6 +43,7 @@ public class SettingsPanel {
         module = null;
         dragNum = null;
         dragHue = null;
+        ConfigManager.saveLocal();
     }
 
     public void open(Module m, double mx, double my, int screenW, int screenH) {
@@ -174,6 +176,7 @@ public class SettingsPanel {
             case 6 -> { if (h.s instanceof Setting.Color c) { c.syncTheme = false; c.rainbow = false; dragHue = c; dragHueX = h.x; dragHueW = h.w; setHue(mx); } }
             default -> {}
         }
+        ConfigManager.saveLocal();
     }
 
     public boolean mouseDragged(double mx, double my, int btn) {
@@ -185,8 +188,10 @@ public class SettingsPanel {
     }
 
     public boolean mouseReleased(double mx, double my, int btn) {
+        boolean wasDrag = dragNum != null || dragHue != null;
         dragNum = null;
         dragHue = null;
+        if (wasDrag) ConfigManager.saveLocal();
         return false;
     }
 

@@ -23,14 +23,13 @@ $u = current_user();
       <div class="hv-stage">
         <div class="hv-orb o1"></div>
         <div class="hv-orb o2"></div>
-        <div class="clickgui">
-          <div class="cg-head"><span class="d"></span><span class="d"></span><span class="d"></span><span class="cg-title">End Client — ClickGUI</span></div>
-          <div class="cg-body">
-            <div class="cg-cats"><span class="cg-cat active">Combat</span><span class="cg-cat">Render</span><span class="cg-cat">Player</span></div>
-            <div class="cg-mod on"><span>KillAura</span><i class="sw"></i></div>
-            <div class="cg-mod on"><span>Animations</span><i class="sw"></i></div>
-            <div class="cg-mod"><span>ESP</span><i class="sw"></i></div>
-            <div class="cg-mod"><span>Custom HUD</span><i class="sw"></i></div>
+        <div class="showcard">
+          <div class="sc-head"><span class="d"></span><span class="d"></span><span class="d"></span><span class="sc-title">End Client — Конфиги</span></div>
+          <div class="sc-body">
+            <div class="sc-row"><span class="sc-ic">☁</span><div class="sc-txt"><b>Облачный конфиг</b><i>Синхронизация между ПК</i></div><span class="sc-badge">Онлайн</span></div>
+            <div class="sc-slot on"><span>Мой пресет</span><span class="sc-tag">активен</span></div>
+            <div class="sc-slot"><span>Кинематограф</span><span class="sc-mini">↑ в облако</span></div>
+            <div class="sc-slot"><span>Старый конфиг</span><span class="sc-mini">↓ загрузить</span></div>
           </div>
         </div>
         <div class="hud-chip c1"><b>FPS</b> 240</div>
@@ -52,7 +51,7 @@ $u = current_user();
       <div class="card reveal"><div class="ico">◆</div><h3>Кастомный HUD</h3><p>Настраиваемые модули: координаты, FPS, keystrokes, потенции и таргет-худ.</p></div>
       <div class="card reveal"><div class="ico">◑</div><h3>Две темы</h3><p>Переключайся между бело-красной темой и стилем Claude в один клик.</p></div>
       <div class="card reveal"><div class="ico">⚡</div><h3>Оптимизация</h3><p>Совместимость с Sodium и минимальная нагрузка на рендер — стабильный FPS.</p></div>
-      <div class="card reveal"><div class="ico">⚙</div><h3>ClickGUI</h3><p>Удобное меню с поиском, категориями и живым предпросмотром настроек.</p></div>
+      <div class="card reveal"><div class="ico">☁</div><h3>Облачные конфиги</h3><p>Настрой клиент один раз — конфиг сохраняется локально и в облаке, доступен на любом ПК.</p></div>
       <div class="card reveal"><div class="ico">↻</div><h3>Авто-обновления</h3><p>Клиент сам проверяет новые версии и подтягивает свежие сборки.</p></div>
     </div>
   </div>
@@ -74,7 +73,7 @@ $u = current_user();
         <ul class="plan-features">
           <li>Полный доступ к клиенту End Client Forever</li>
           <li>Обе темы: Red и Claude</li>
-          <li>Кастомный HUD и ClickGUI</li>
+          <li>Кастомный HUD и облачные конфиги</li>
           <li>Приоритетные авто-обновления</li>
           <li>Значок подписчика в профиле</li>
         </ul>

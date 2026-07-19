@@ -39,3 +39,13 @@ CREATE TABLE IF NOT EXISTS `client_events` (
   KEY `idx_ev_time` (`created_at`),
   CONSTRAINT `fk_ev_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Облачные конфиги клиента (один на пользователя, перезаписывается)
+CREATE TABLE IF NOT EXISTS `client_configs` (
+  `user_id`    INT UNSIGNED NOT NULL,
+  `data`       LONGTEXT NOT NULL,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`),
+  CONSTRAINT `fk_cfg_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -8,6 +8,7 @@ import java.util.Map;
 import com.mojang.math.Axis;
 
 import forever.end.client.ecf.ClientState;
+import forever.end.client.ecf.ConfigManager;
 import forever.end.client.ecf.Theme;
 import forever.end.client.ecf.module.Category;
 import forever.end.client.ecf.module.Module;
@@ -47,7 +48,7 @@ public class ClickGuiScreen extends Screen {
     @Override
     protected void init() {
         if (panel == null) panel = new SettingsPanel(this.font);
-        barW = 460;
+        barW = 500;
         barH = 34;
         barX = (this.width - barW) / 2;
         barY = 20;
@@ -68,6 +69,11 @@ public class ClickGuiScreen extends Screen {
         addRenderableWidget(new UiButton(barX + 116, barY + (barH - 18) / 2, 66, 18,
                 Fonts.body("HUD ▦"), UiButton.Style.GHOST,
                 () -> this.minecraft.setScreen(new HudEditorScreen(this))));
+
+        // Кнопка системы конфигов (локально + облако).
+        addRenderableWidget(new UiButton(barX + 190, barY + (barH - 18) / 2, 60, 18,
+                Fonts.body("Конфиг"), UiButton.Style.GHOST,
+                () -> this.minecraft.setScreen(new ConfigScreen(this))));
     }
 
     @Override
@@ -223,6 +229,7 @@ public class ClickGuiScreen extends Screen {
                 } else if (btn == 0) {
                     e.m.toggle();
                     ClientState.event("toggle_module", e.m.name + " = " + (e.m.enabled ? "вкл" : "выкл"));
+                    ConfigManager.saveLocal();
                     return true;
                 }
             }
@@ -257,6 +264,7 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public void onClose() {
+        ConfigManager.saveLocal();
         this.minecraft.setScreen(parent);
     }
 

@@ -90,6 +90,16 @@ public final class EndApi {
     }
 
     /** Отправить событие (fire-and-forget, ответ не важен). */
+    /** Сохранить конфиг в облако. */
+    public static void configSave(String token, String data, Consumer<Result> cb) {
+        send(post("/config_save.php", "token=" + enc(token) + "&data=" + enc(data)), cb);
+    }
+
+    /** Загрузить конфиг из облака. */
+    public static void configLoad(String token, Consumer<Result> cb) {
+        send(post("/config_load.php", "token=" + enc(token)), cb);
+    }
+
     public static void event(String token, String type, String detail) {
         if (token == null || token.isEmpty()) return;
         try {

@@ -1,6 +1,7 @@
 package forever.end.client.ecf.fx;
 
 import forever.end.client.ecf.module.Module;
+import forever.end.client.ecf.module.Modules;
 import forever.end.client.ecf.ui.Draw;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
@@ -49,7 +50,9 @@ public final class WorldFx {
             default -> t = 23000L; // \u0423\u0442\u0440\u043e / \u0440\u0430\u0441\u0441\u0432\u0435\u0442
         }
         long day = mc.level.getDayTime() / 24000L;
-        mc.level.setDayTime(day * 24000L + t);
+        if (mc.level.getLevelData() instanceof net.minecraft.client.multiplayer.ClientLevel.ClientLevelData data) {
+            data.setDayTime(day * 24000L + t);
+        }
     }
 
     // ---------------- Weather Changer ----------------
@@ -86,19 +89,21 @@ public final class WorldFx {
         savedClouds = null;
     }
 
-    // ---------------- Custom Sky (HUD) ----------------
-    public static void skyHud(GuiGraphics g, float partial, Module m) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) return;
-        float density = m.numf("\u041f\u043b\u043e\u0442\u043d\u043e\u0441\u0442\u044c");
-        if (density <= 0f) return;
-        int col = m.color("\u0426\u0432\u0435\u0442");
-        int w = g.guiWidth();
-        int h = g.guiHeight();
-        int topA = (int) Math.min(255f, density * 255f);
-        int top = Draw.alpha(col, topA);
-        int bottom = Draw.alpha(col, 0);
-        g.fillGradient(0, 0, w, h, top, bottom);
+    // ---------------- Custom Sky (цвет неба движка) ----------------
+    /** Вызывается из SkyColorMixin: смешивает цвет неба с выбранным по “Плотности”. */
+    public static int applySkyColor(int original) {
+        Module m = Modules.find("Custom Sky");
+        if (m == null || !m.enabled) return original;
+        float blend = m.numf("Плотность");
+        if (blend <= 0f) return original;
+        if (blend > 1f) blend = 1f;
+        int target = m.color("Цвет");
+        int or = (original >> 16) & 0xFF, og = (original >> 8) & 0xFF, ob = original & 0xFF;
+        int tr = (target >> 16) & 0xFF, tg = (target >> 8) & 0xFF, tb = target & 0xFF;
+        int nr = (int) (or + (tr - or) * blend);
+        int ng = (int) (og + (tg - og) * blend);
+        int nb = (int) (ob + (tb - ob) * blend);
+        return (original & 0xFF000000) | (nr << 16) | (ng << 8) | nb;
     }
 
     // ---------------- Bloom (HUD) ----------------

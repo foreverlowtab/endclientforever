@@ -8,7 +8,9 @@
 		"CameraMixin",
 		"EntityTurnMixin",
 		"PlayerRendererMixin",
-		"PlayerEmoteMixin"
+		"PlayerEmoteMixin",
+		"ClientTimeMixin",
+		"SkyColorMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

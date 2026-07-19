@@ -361,9 +361,12 @@ public final class AnimationFx {
                 la.zRot = 2.9f - s;
             }
             case "Аплодисменты" -> {
-                float c = Mth.sin(sec * 12f) * 0.25f;
-                ra.xRot = -1.4f; la.xRot = -1.4f;
-                ra.zRot = 0.35f + c; la.zRot = -0.35f - c;
+                // руки вперёд на уровень груди и сводим ладони к центру (хлопок)
+                float t = (Mth.sin(sec * 14f) + 1f) * 0.5f;   // 0..1, 1 = ладони вместе
+                ra.xRot = -1.45f; la.xRot = -1.45f;
+                float inward = 0.25f + t * 0.32f;
+                ra.yRot = inward; la.yRot = -inward;
+                bd.xRot = 0.05f;
             }
             case "Кивок" -> {
                 hd.xRot = 0.30f + Mth.sin(sec * 6f) * 0.30f;
@@ -392,10 +395,11 @@ public final class AnimationFx {
                 rl.xRot = b * 0.3f;
                 ll.xRot = -b * 0.3f;
             }
-            default -> { // Привет
-                ra.zRot = -2.2f + Mth.sin(sec * 10f) * 0.25f;
-                ra.xRot = -0.15f;
-                hd.yRot = 0.15f;
+            default -> { // Привет — машем одной правой рукой у головы
+                la.zRot = 0.08f;                              // левая рука спокойно висит
+                ra.xRot = -0.10f;                             // чуть вперёд, чтобы кисть была видна
+                ra.zRot = 2.60f + Mth.sin(sec * 9f) * 0.45f; // поднята у головы и качается = мах
+                hd.yRot = -0.12f;
             }
         }
     }
