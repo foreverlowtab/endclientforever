@@ -34,6 +34,23 @@ $lastDl = $st->fetch()['last_dl'] ?? null;
 
 $sub = active_subscription((int)$u['id']);
 
+// Облачный конфиг клиента (если сохранён).
+$st = db()->prepare('SELECT data, updated_at FROM client_configs WHERE user_id = ? LIMIT 1');
+$st->execute([$u['id']]);
+$cfgRow = $st->fetch();
+$cfg = null; $cfgTheme = null; $cfgEnabled = [];
+if ($cfgRow) {
+    $cfg = json_decode($cfgRow['data'], true);
+    if (is_array($cfg)) {
+        $cfgTheme = $cfg['theme'] ?? null;
+        if (!empty($cfg['modules']) && is_array($cfg['modules'])) {
+            foreach ($cfg['modules'] as $mname => $mm) {
+                if (!empty($mm['on'])) $cfgEnabled[] = $mname;
+            }
+        }
+    }
+}
+
 $page_title = 'Личный кабинет — End Client Forever';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -81,6 +98,27 @@ require __DIR__ . '/includes/header.php';
             <small>v<?= e(CLIENT_VERSION) ?> · Fabric <?= e(CLIENT_MC) ?></small>
             <a href="download.php" class="btn btn-block">Скачать .jar ↓</a>
           </div>
+        </div>
+        <div class="panel">
+          <h3>☁ Облачный конфиг</h3>
+          <?php if ($cfgRow): ?>
+            <div class="stat-row"><span class="k">Обновлён</span><span class="v"><?= e(human_datetime($cfgRow['updated_at'])) ?></span></div>
+            <div class="stat-row"><span class="k">Тема</span><span class="v"><?= $cfgTheme ? e($cfgTheme) : '—' ?></span></div>
+            <div class="stat-row"><span class="k">Включённых функций</span><span class="v"><?= count($cfgEnabled) ?></span></div>
+            <div class="stat-row"><span class="k">Размер</span><span class="v"><?= e(number_format(strlen($cfgRow['data']) / 1024, 1)) ?> КБ</span></div>
+            <?php if ($cfgEnabled): ?>
+              <p style="color:var(--muted);font-size:13.5px;margin:12px 0 6px">Активные функции:</p>
+              <div class="cfg-chips"><?php foreach ($cfgEnabled as $mn): ?><span class="cfg-chip"><?= e($mn) ?></span><?php endforeach; ?></div>
+            <?php endif; ?>
+            <details class="cfg-json">
+              <summary>Показать JSON</summary>
+              <pre><?= e(json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></pre>
+            </details>
+            <a href="config_download.php" class="btn btn-ghost btn-block" style="margin-top:12px">Скачать конфиг .json ↓</a>
+          <?php else: ?>
+            <p style="color:var(--muted);font-size:14.5px;margin-bottom:6px">Облачный конфиг ещё не сохранён.</p>
+            <p style="color:var(--muted);font-size:13.5px">В клиенте: ClickGUI → «Конфиг» → «Сохранить в облако», или команда <code>.cfg cloud save</code>.</p>
+          <?php endif; ?>
         </div>
         <div class="panel">
           <h3>★ Подписка</h3>
