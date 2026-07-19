@@ -1,5 +1,18 @@
 {
   "providers": [
-    { "type": "ttf", "file": "forever-endclient:body.ttf", "size": 8.5, "oversample": 6.0, "shift": [0.0, 0.0] }
+    {
+      "type": "ttf",
+      "file": "forever-endclient:body.ttf",
+      "size": 8.5,
+      "oversample": 6.0,
+      "shift": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:include/default"
+    }
   ]
 }

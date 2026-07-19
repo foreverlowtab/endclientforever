@@ -3,6 +3,7 @@ package forever.end.client.ecf.module;
 import java.util.List;
 
 import forever.end.client.ecf.fx.AnimationFx;
+import forever.end.client.ecf.fx.WorldFx;
 import forever.end.client.ecf.fx.CameraFx;
 import forever.end.client.ecf.fx.CosmeticFx;
 import forever.end.client.ecf.fx.EffectFx;
@@ -154,12 +155,28 @@ public final class Modules {
                 .add(new Setting.Num("Интенсивность", 45, 10, 90, 1))
                 .hud(CameraFx::motionHud))),
         new Category("World", "☀", List.of(
-            new Module("Fullbright", "", true),
-            new Module("Time Changer", "", false),
-            new Module("Weather Changer", "", false),
-            new Module("Custom Sky", "", false),
-            new Module("Custom Clouds", "", false),
-            new Module("Bloom", "", true))),
+            new Module("Fullbright", "", true)
+                .add(new Setting.Num("Яркость", 1.0, 0.5, 1.0, 0.05))
+                .tick(WorldFx::fullbrightTick)
+                .onDisable(WorldFx::fullbrightReset),
+            new Module("Time Changer", "", false)
+                .add(new Setting.Mode("Время", 1, "Утро", "Полдень", "Закат", "Ночь", "Полночь"))
+                .tick(WorldFx::timeTick),
+            new Module("Weather Changer", "", false)
+                .add(new Setting.Mode("Погода", 0, "Ясно", "Дождь", "Гроза"))
+                .tick(WorldFx::weatherTick)
+                .onDisable(WorldFx::weatherReset),
+            new Module("Custom Sky", "", false)
+                .add(new Setting.Color("Цвет", 0xFF7FB2FF, false))
+                .add(new Setting.Num("Плотность", 0.3, 0.0, 0.7, 0.05))
+                .hud(WorldFx::skyHud),
+            new Module("Custom Clouds", "", false)
+                .add(new Setting.Mode("Облака", 2, "Выкл", "Быстрые", "Детальные"))
+                .tick(WorldFx::cloudsTick)
+                .onDisable(WorldFx::cloudsReset),
+            new Module("Bloom", "", true)
+                .add(new Setting.Num("Интенсивность", 0.5, 0.0, 1.0, 0.05))
+                .hud(WorldFx::bloomHud))),
         new Category("HUD", "▦", List.of(
             new Module("Watermark", "", true)
                 .add(new Setting.Bool("Профиль", true))
